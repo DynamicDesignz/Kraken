@@ -1,0 +1,84 @@
+#***************************************************************#
+#*                                                             *#
+#*                        General Settings                     *#
+#*                                                             *#
+#***************************************************************#
+
+#Startup Mode
+# Info : This setting will be overridden by the command line. 
+#		If no commandline argument is give, this setting will be used 
+# Options : ServerOnly - Starts Kraken in Server mode
+#           WorkerOnly - Starts Kraken Worker
+#			ServerAndWorker  - Starts an instance of Kraken Server and Worker 
+StartupMode: ServerAndWorker
+
+#Web User Interface Port
+WebUIPort: 8080
+
+#Temporary Folder Location
+TemporaryFilesFolder: ./kraken-tmp/
+
+#Hosted Functions
+HostedFunctions : [ WPA/WPA2 ]
+
+#***************************************************************#
+#*                                                             *#
+#*                        Server Settings                      *#
+#*                                                             *#
+#***************************************************************#
+
+#Gearman Server Type 
+# Info : This is to determine the Gearman Server being used by the system.
+# Options : Java - Uses the Java Gearman Server
+# 			Native - This uses the C++ command line verison. 
+#GearmanServerType: Native
+#GearmanVersion: "OK 1.1.12"
+#GearmanExecuteCommand: "gearmand"
+# For Java 
+GearmanServerType: Java
+GearmanVersion : "0.6.6"
+GearmanExecuteCommand : ""
+
+#Server Port Configuraitons
+# Info : This specifies the ports on which Gearman Server will run on.
+GearmanServerPort: 4731
+
+#PasswordList and Password Directories
+# Info : If PasswordLookInFolder is set to "True", Kraken will find all supported Password List
+#        file formats in the folder. 
+#		 If this option is "False", Kraken will look at SpecificPasswordLists for provided 
+#		 password lists
+PasswordLookInFolder: true
+PasswordListSupportedFormats: [ .txt, .TXT, .lst, .LST ]
+PasswordListFolder: "/media/wali/e1e6a7ba-a45b-4268-b696-e031847f371e/Kraken/PasswordLists"
+#PasswordListFolder: "/home/wali/workspace/Kraken/password_list"
+# SpecificPasswordLists:
+# 	- Name: sample-kraken-passwordlist-1.txt
+# 	  Path: /home/user/fldr/sample-kraken-passwordlist-1.txt
+# 	- Name: sample-kraken-passwordlist-2.text
+# 	  Path: /home/user/fldr/sample-kraken-passwordlist-2.txt
+
+#Interval between checking for new Workers in milliseconds
+QueryGearmanWorkersInterval: 2000
+
+#Number of Passwords Per Job
+SizeOfWorkerJob: 100000
+
+#Number of Gearman Server Invocation Retries
+InvocationAttempts: 3
+
+#Search pattern
+# Info : What type of a Search pattern to use when scanning Lists
+# Options : Optimize : For small files, random chunks will be searched.
+#					   for large files, chunks will be searched linearly.
+#			Linear : All files are searched linearly. Faster for large files.
+#           Random : All files are searched randomly. Slow for large files.
+SearchPattern: Optimize
+
+#***************************************************************#
+#*                                                             *#
+#*                        Worker Settings                      *#
+#*                                                             *#
+#***************************************************************#
+JobServerIP : 198.162.52.98
+JobServerPort : 4731

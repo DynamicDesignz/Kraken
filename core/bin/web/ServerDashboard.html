@@ -1,0 +1,190 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></meta>
+    <!-- LIBS -->       
+    <script src="Server-Dashboard-Assets/jquery.min.js"></script>
+    <script src="Server-Dashboard-Assets/jqueryUI.js"></script>
+    <script src="Server-Dashboard-Assets/bootstrap.min.js"></script>
+
+    <!-- STYLES -->    
+    <link href="Server-Dashboard-Assets/bootstrap.min.css" rel="stylesheet" type="text/css"></link>
+    <link href="Server-Dashboard-Assets/fonts.css" rel="stylesheet" type="text/css"></link>
+    <link href="Server-Dashboard-Assets/progress_bar.css" rel="stylesheet" type="text/css"></link>
+
+    <!-- PRIMARY STYLESHEET -->
+    <link href="Server-Dashboard-Assets/styles.css" rel="stylesheet" type="text/css"></link>
+
+    <!-- PRIMARY JS SCRIPT FILE -->
+    <script src="Server-Dashboard-Assets/script.js"></script>
+    </head>
+    <body>
+        <div id="container">
+            <div id="menu">
+                <ul>
+                    <li onclick="pulseAddRequest()"><a>Add New Request</a></li>
+                    <li onclick="pulseResults()"><a>See Results</a></li>
+                    <!--<li><a href="">Inspect Request List</a></li>-->
+
+                </ul>
+            </div>
+            <div id="content">
+                <h1>Kraken - 0.1.1</h1> <h3><i>Release the Passwords!</i></h3>    
+                
+                <div class="info">
+                    <div class="box" id="glbl_uptime">
+                        <span class="number content">0</span> <span class="text">Uptime</span>
+                    </div>
+
+                    <div class="box" id="glbl_onlineworkers">
+                        <span class="number content">0</span> <span class="text">Online Workers</span>
+                    </div>
+                    
+                    <div class="box" id="glbl_activeworkers">
+                        <span class="number content">0</span> <span class="text">Active Workers</span>
+                    </div>
+
+                    <div class="box" id="glbl_requestsinqueue">
+                        <span class="number content">0</span> <span class="text">Requests In Queue</span>
+                    </div>
+
+                    <div class="box" id="glbl_usedmemory">
+                        <span class="number content">0%</span> <span class="text">Used memory<br>
+        
+                        </span>
+                    </div>
+                    
+                    <div class="box" id="glbl_completedrequests">
+                        <span class="number content">0</span> <span class="text">Completed Requests<br>
+                        </span>
+                    </div>
+
+                    <div class="clear"></div>
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" style="text-align:center;" data-toggle="collapse" href="#collapse1">
+                                <h4 class="panel-title" >
+                                    <a>More +</a>
+                                </h4>
+                            </div>
+                            <div id="collapse1" class="panel-collapse collapse">
+                                <div class="panel-body info">
+                                    <div class="box" id="glbl_gearmanstatus">
+                                        <div class="number content circle" style="background-color: #FF0000;"></div> <span class="text">Gearman Server Status</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Request Section -->
+            <div id="activerequest" class="section">
+            <h4>Active Request</h4>
+                <div id="activerequest_info">
+                    <div class="box_element" id="act_id"><span>ID : </span> <span class="content"></span></div> 
+                    <div class="box_element" id="act_type"><span>Type : </span> <span class="content"></span></div> 
+                    <div class="box_element" id="act_ssid"><span>Identifier : </span> <span class="content"></span></div>
+                    <div class="box_element" id="act_capfile"><span>File : </span > <span class="content" ></span></div>
+                    <div class="box_element" id="act_currentplist"><span>Current PasswordList : </span> <span class="content"><button type="button" class="btn btn-success">List 3</button></span>
+                    </div>
+                    <div class="box_element" id="act_plistprogress"><span>Password List Progress : </span>
+                        <span class="content">
+                        </span>
+                    </div>
+                    <div class="box_element" id="act_currentplistprogress"><span>Current List Progress : </span> 
+                        <span class="content">
+                        </span>
+                    </div>
+                    <div class="box_element" >
+                        <div class="progress progress-striped" id="act_currentplistprogressbar">
+                            <div class="progress-bar progress-bar-danger" role="progressbar" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100" style="width: 80%">
+                            </div>
+                            <span class="content pbar"></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="activerequest_norequest" class="no-result">
+                    <span>- No Current Active Request -</span>
+                    
+                </div>
+            </div>
+            <!-- End of Active Request Section -->
+            
+            
+            <div >
+                
+                <!-- New Request Section -->
+                <div class="splitcol-left">
+                    <div id="new_request" class="section" href="#new_request">
+                        <h4>New Request</h4>
+                        <form role= "form" id="nr_request_form" action="serverwebui" method="POST" enctype="multipart/form-data" onsubmit="iframeLoad()" target="form-result">
+                            <div class = "form-group box_element">
+                                <label for = "name">Target Algorithm:</label>
+                                <select id="nr_algo" style="float:right;margin-right:30%" name="request-type">
+                                    <!--<option value="<%= KrakenConstants.Request_Type_WPA_WPA2 %>">WPA/WPA2</option>-->
+                                </select>
+                            </div>
+                            <div class = "form-group box_element">
+                                <label for = "inputfile">File:</label>
+                                <input type = "file" name="request-file" required>
+                                <p class = "help-block">File should be a ".cap" for WPA/WPA2</p>
+                            </div>
+                            <div class = "form-group box_element">
+                                <label for = "name">Identifier</label>
+                                <input type = "text" class = "form-control" placeholder = "eg F2:23:22:S3:G3:84" name="request-captureidentifier" required>
+                                <p class = "help-block">Identifier should be an AP BSSID for WPA/WPA2</p>
+                            </div>
+                            <div class="form-group box_element">
+                                <label for = "name">Choose Password Lists from Available Options:</label>
+                                <div id="nr_password_list_container">
+                                    <div class = "checkbox">
+                                        <!--<label><input type = "checkbox" name="request-plist" value="DarkCode">DarkCode <span> - 75 KB </span></label>-->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="box_element" style="text-align:center;">
+                                <button type="submit" class="btn btn-default" >Submit</button>
+                            </div>
+                        </form>
+                        <iframe id="form-result-frame" name="form-result" width="100%" height="40" style="border: none;overflow:hidden;" scrolling="no" ></iframe>
+                        <div style="height:40px" id="iframe-ghost-div" ></div>
+                    </div>
+                </div>
+                <!-- End of New Request Section -->
+                
+                
+                <!-- Start of Results Section -->
+                <div class="splitcol-right">
+                    <div id="request_list" class="section"> 
+                        <h4> Request Results</h4>
+                        <div class="scroller" id="results-list">
+<!--
+                            <div class="result-entry">
+                                <div id="res_id">UUID : <span class="content">432423423243234</span></div>
+                                <div id="res_file">File : <span class="content">dsfdsfsfsf.cap</span></div>
+                                <div id="res_result">Password : <span class="content">NOT FOUND</span></div>
+                                <div id="res_status">Status : <span class="content">Complete</span>
+                                <div>
+                            </div>
+-->
+                        </div>
+                        <div id="results_noresult" class="no-result">
+                            <span>- No Results Received -</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            
+           
+            
+            
+            
+            
+            
+        </div>
+
+
+    </body>
+</html>
