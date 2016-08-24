@@ -89,6 +89,9 @@ Aircrack-ng 1.1 - (C) 2006, 2007, 2008, 2009 Thomas d'Otreppe
 
 If you want to use more advanced features, see the configuration section below.
 
+### Screenshots
+![screenshot](https://github.com/arcaneiceman/Kraken/misc/repo-images/kraken-screenshot.png)
+
 # Configuration
 
 Configuration of Kraken is peformed in the config.yml file. This section explains simple configuration setup to create a cracking cluster.
