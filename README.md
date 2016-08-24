@@ -1,4 +1,4 @@
-![logo](https://github.com/arcaneiceman/Kraken/blob/master/misc/repoimages/kraken-logo.png width="200") 
+<img src="https://github.com/arcaneiceman/Kraken/blob/master/misc/repoimages/kraken-logo.png" width="200" style="display: block;margin: 0 auto;">
 
 # Kraken
 
