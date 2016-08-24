@@ -1,4 +1,4 @@
-![logo](https://github.com/arcaneiceman/Kraken/misc/repo-images/kraken-logo.png) 
+![logo](https://github.com/arcaneiceman/Kraken/blob/master/misc/repoimages/kraken-logo.png) 
 
 # Kraken
 
@@ -90,7 +90,7 @@ Aircrack-ng 1.1 - (C) 2006, 2007, 2008, 2009 Thomas d'Otreppe
 If you want to use more advanced features, see the configuration section below.
 
 ### Screenshots
-![screenshot](https://github.com/arcaneiceman/Kraken/misc/repo-images/kraken-screenshot.png)
+![screenshot](https://github.com/arcaneiceman/Kraken/blob/master/misc/repoimages/kraken-screenshot.png)
 
 # Configuration
 
