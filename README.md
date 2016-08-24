@@ -1,3 +1,5 @@
+![logo](https://github.com/arcaneiceman/Kraken/misc/repo-images/kraken-logo.png) 
+
 # Kraken
 
 Kraken is a cross-platform distributed brute-force WPA/WPA2 WiFi password cracking tool. It allows you to parallelize password-list based cracking across multiple machines to create a cluster of crackers, and can run on Unix, Mac, Windows or any operating system that supports Java. Kraken nearly eliminates lengthy setup time by being easy to install, is fault tolerant and can support dynamic resizing of the network. 
