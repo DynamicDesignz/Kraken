@@ -20,11 +20,11 @@ Kraken has a web interface where you can submit a packet capture (.cap) file and
 Kraken is organised in the client server architecture where the server acts as the main hub connecting other worker clients which do the actual cracking. You can have both a client and server on a single machine as well. The server must stay online during the cracking process but worker clients may be added or removed at any time. The system is fault tolerant so that if a worker crashes, the lost job is recovered and re-sent to a different worker
 
 # Installation
-#### Dependencies
+### Dependencies
 
 To run Kraken you need two dependecies:
 - Java 1.8
-- Aircrack-ng 1.2
+- Aircrack-ng 1.1 or above
 ##### ***Java 1.8*** 
 You can download Java 1.8 for your platform from the [Oracle Java Website]. Otherwise:
 ###### Linux
@@ -40,7 +40,7 @@ On Windows you need to download and install the Java 1.8 exe file from the link 
 ###### Mac
 On Mac, you need to download and install the Java 1.8 dmg file from the link above.
 
-#### ***Aircrack-ng 1.2***  
+#### ***Aircrack-ng 1.1 or above***  
 You can download Aircrack-ng from its [download] site.
 ###### Linux
 On Ubuntu, you can use the following commands to download the following commands:
@@ -64,15 +64,34 @@ sudo port install aircrack-ng
 #### ***Gearman Native Server (Optional, only for Linux)***
 -Instructions coming soon -
 
----
-# Testing
-To test if it is Kraken is working, type:
+#### Testing
+To test if Kraken will work properly, first run:
 ```sh
-java -jar kraken.jar -sm=test
+java -version
 ```
+Your result should include
+```sh
+Java(TM) SE Runtime Environment (build 1.8.0_91-b14)
+```
+Next, test aircrack from the same folder as kraken.jar by typing
+```sh
+aircrack-ng
+```
+You should see the following on the first line.
+```sh
+Aircrack-ng 1.1 - (C) 2006, 2007, 2008, 2009 Thomas d'Otreppe
+```
+
+### Getting Started
+1. Download this repository's  .zip file and navigate to the Kraken/jar folder.
+2. Run java -jar kraken.jar
+3. This will start an instance of a server and worker client (on the same local machine). A gearman server will be created at port 4730 and a Web UI will be instantiated on port 8080.
+
+If you want to use more advanced features, see the configuration section below.
+
 # Configuration
 
-Configuration of Kraken is peformed in the config.yml file.
+Configuration of Kraken is peformed in the config.yml file. This section explains simple configuration setup to create a cracking cluster.
 
 ##### Startup Mode
 Kraken has three running modes: 
