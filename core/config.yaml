@@ -9,7 +9,7 @@
 #		If no commandline argument is give, this setting will be used 
 # Options : ServerOnly - Starts Kraken in Server mode
 #           WorkerOnly - Starts Kraken Worker
-#			ServerAndWorker  - Starts an instance of Kraken Server and Worker 
+#	        ServerAndWorker  - Starts an instance of Kraken Server and Worker 
 StartupMode: ServerAndWorker
 
 #Web User Interface Port
@@ -41,7 +41,7 @@ GearmanExecuteCommand : ""
 
 #Server Port Configuraitons
 # Info : This specifies the ports on which Gearman Server will run on.
-GearmanServerPort: 4731
+GearmanServerPort: 4730
 
 #PasswordList and Password Directories
 # Info : If PasswordLookInFolder is set to "True", Kraken will find all supported Password List
@@ -81,4 +81,4 @@ SearchPattern: Optimize
 #*                                                             *#
 #***************************************************************#
 JobServerIP : 198.162.52.98
-JobServerPort : 4731
+JobServerPort : 4730
