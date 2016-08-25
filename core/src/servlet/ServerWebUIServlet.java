@@ -84,13 +84,21 @@ public class ServerWebUIServlet extends HttpServlet
     		//Update Active Request
     		response.getWriter().println(handle_activerequest(returnObject));
     	}
+    	else if (typeParameter.equals("addpasswordlist")){
+    		response.getWriter().println(handle_addpasswordlist(returnObject));
+    	}
     	else{
     		System.out.println("Unknown Request from Web UI");
     		response.sendError(500);
     	}
     }
     
-    @SuppressWarnings("unchecked")
+    JSONObject handle_addpasswordlist(JSONObject returnObject) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@SuppressWarnings("unchecked")
 	JSONObject handle_initialize(JSONObject returnObject){
     	
     	// PasswordLists

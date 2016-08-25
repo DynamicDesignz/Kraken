@@ -72,6 +72,8 @@ public class KrakenWorker implements GearmanFunction{
 			//Create PcapFile
 			createCapFile(job);
 			
+			//Time
+			
 			//Crack
 			LOG.getLogger().info("Cracking....");
 			replyBuilder = crackJob(replyBuilder,job);
