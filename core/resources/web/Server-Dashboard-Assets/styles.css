@@ -214,3 +214,22 @@ table.cluster tr.local {
     margin-top: 30px;
     margin-bottom: 45px;
 }
+
+.fileUpload {
+    position: relative;
+    overflow: hidden;
+    cursor:pointer;
+    margin-left: 35px;
+    margin-top: 25px;
+    margin-bottom: 35px;
+}
+
+.fileUpload input.upload {
+    position: absolute;
+    height: 50px;
+	top: -10px;
+	left: -10px;
+    cursor: pointer;
+    opacity: 0;
+    filter: alpha(opacity=0);
+}
