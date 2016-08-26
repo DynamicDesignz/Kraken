@@ -27,7 +27,7 @@ public enum GearmanWorkerManager {
 			public void run(){
 				while(true){
 					try{
-						String output = UtilityFunctions.sendTextCommandToServer("status");
+						String output = UtilityFunctions.sendTextCommandToGearmanServer("status");
 						if(output == null){System.out.println("WARN : Could not Reach Gearman Server");throw new RuntimeException();}
 						String[] workers = output.split("\t");
 							

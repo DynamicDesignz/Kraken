@@ -164,7 +164,7 @@ public class ServerWebUIServlet extends HttpServlet
     	returnObject.put("Completedrequests", cachedResults.size());
     	
     	//Gearman Status
-    	if(UtilityFunctions.sendTextCommandToServer("Version").isEmpty()){returnObject.put("GearmanStatus", false);}else{returnObject.put("GearmanStatus", true);};
+    	if(UtilityFunctions.sendTextCommandToGearmanServer("Version").isEmpty()){returnObject.put("GearmanStatus", false);}else{returnObject.put("GearmanStatus", true);};
     	
     	//Memory Usage
     	returnObject.put("Memory",getMemoryUsage() + "%");

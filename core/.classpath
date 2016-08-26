@@ -15,5 +15,6 @@
 	<classpathentry kind="lib" path="/home/wali/KrakenRepo/Kraken/core/lib/servlet3.0-jsp2.2-api.jar"/>
 	<classpathentry kind="lib" path="/home/wali/KrakenRepo/Kraken/core/lib/slf4j-api-1.6.4.jar"/>
 	<classpathentry kind="lib" path="/home/wali/KrakenRepo/Kraken/core/lib/snakeyaml-1.9.jar"/>
+	<classpathentry kind="lib" path="/home/wali/KrakenRepo/Kraken/core/lib/sqlite-jdbc-3.8.11.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

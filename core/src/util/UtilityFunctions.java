@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.*;
 
 import logger.LOG;
 
@@ -27,7 +28,7 @@ public class UtilityFunctions {
 	 * 
 	 * If String is empty, then failed
 	 */
-	public static String sendTextCommandToServer(String command){
+	public static String sendTextCommandToGearmanServer(String command){
 		Socket pingSocket = null;
 		PrintWriter out = null;
 		BufferedReader in = null;
@@ -108,6 +109,29 @@ public class UtilityFunctions {
 			}
 		}
 		return false;
+	}
+	
+	public static void createEmptyPasswordListDB(){
+		Connection c = null;
+		Statement stmt = null;
+		try{
+			Class.forName("org.sqlite.JDBC");
+		    c = DriverManager.getConnection("jdbc:sqlite:"+Constants.TemporaryFolderLocation+"test.db");
+		    LOG.getLogger().info("Creating PasswordList Database");
+		    stmt = c.createStatement();
+		      String sql = "CREATE TABLE COMPANY " +
+		                   "(Name TEXT PRIMARY KEY     NOT NULL," +
+		                   " Path           TEXT    NOT NULL, " + 
+		                   " Linecount            INT     NOT NULL, " + 
+		                   " Size        LONG, " + 
+		                   " Charset         TEXT)"; 
+		      stmt.executeUpdate(sql);
+		      stmt.close();
+		      c.close();
+		}catch ( Exception e ) {
+	      System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+	      System.exit(0);
+	    }
 	}
 	
 }

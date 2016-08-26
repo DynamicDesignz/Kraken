@@ -36,7 +36,7 @@ public enum ConfigurationLoader {
 
 	@SuppressWarnings("unchecked")
 	public void loadConfigurations() throws Exception{
-		Map<String, Object> configMap = (Map<String, Object>) yaml.load(new FileInputStream(new File("config.yaml")));
+		Map<String, Object> configMap = (Map<String, Object>) yaml.load(new FileInputStream(new File("config.yml")));
 
 		/** General Configurations **/
 
@@ -74,39 +74,44 @@ public enum ConfigurationLoader {
 
 			//Loading Password Configurations
 			LOG.getLogger().info("Loading Password Lists....");
-			Path defaultListPath = Paths.get(Constants.TemporaryFolderLocation, "10kcommon.txt");
+			Path defaultListPath = Paths.get(Constants.TemporaryFolderLocation, "defaultList.txt");
 			if(!Files.exists(defaultListPath)){
-				InputStream is = this.getClass().getClassLoader().getResourceAsStream("password_list/10kcommon.txt");
+				InputStream is = this.getClass().getClassLoader().getResourceAsStream("password_list/defaultList.txt");
 				Files.write(defaultListPath, IOUtils.toByteArray(is));
 			}
 			PasswordList defaultList = new PasswordList("10kcommon.txt",defaultListPath.toString());
 			availablePasswordLists.put("10kcommon.txt", defaultList);
+			Files.deleteIfExists(defaultListPath);
 			
-			boolean lookInFolder = (boolean) configMap.get("PasswordLookInFolder");
-			Constants.PasswordListExtensions = (List<String>) configMap.get("PasswordListSupportedFormats");
-			if(lookInFolder){
-				Constants.PasswordListFolderLocation = (String) configMap.get("PasswordListFolder");
-				File[] listOfFiles = new File(Constants.PasswordListFolderLocation).listFiles();
-				for(int i =0; i< listOfFiles.length; i++){
-					if(UtilityFunctions.hasPasswordFileExtension(listOfFiles[i].getName())){
-						LOG.getLogger().info("Processing PasswordList " + listOfFiles[i].getName() + "...");
-						PasswordList newList = new PasswordList(listOfFiles[i].getName());
-						availablePasswordLists.put(listOfFiles[i].getName(),newList);
-						LOG.getLogger().info("Load Complete!");
-					}
-				}
+			if(!Files.exists(Paths.get(Constants.TemporaryFolderLocation, "PasswordList.db"))){
+				UtilityFunctions.createEmptyPasswordListDB();
 			}
-			else{
-				List<Map<String,String>> listofFiles = (List<Map<String,String>>) configMap.get("SpecificPasswordLists");
-				if(listofFiles == null){ throw new RuntimeException("No Password Lists have been specified. Are you sure \"PasswordLookInFolder\" is true?");}
-				for(int i=0; i<listofFiles.size(); i++){
-					Map<String,String> entry = listofFiles.get(i);
-					if(UtilityFunctions.hasPasswordFileExtension(entry.get("Name"))){
-						PasswordList newList = new PasswordList(entry.get("Name"),entry.get("Path"));
-						availablePasswordLists.put(entry.get("Name"),newList);
-					}
-				}
-			}
+			
+//			boolean lookInFolder = (boolean) configMap.get("PasswordLookInFolder");
+//			Constants.PasswordListExtensions = (List<String>) configMap.get("PasswordListSupportedFormats");
+//			if(lookInFolder){
+//				Constants.PasswordListFolderLocation = (String) configMap.get("PasswordListFolder");
+//				File[] listOfFiles = new File(Constants.PasswordListFolderLocation).listFiles();
+//				for(int i =0; i< listOfFiles.length; i++){
+//					if(UtilityFunctions.hasPasswordFileExtension(listOfFiles[i].getName())){
+//						LOG.getLogger().info("Processing PasswordList " + listOfFiles[i].getName() + "...");
+//						PasswordList newList = new PasswordList(listOfFiles[i].getName());
+//						availablePasswordLists.put(listOfFiles[i].getName(),newList);
+//						LOG.getLogger().info("Load Complete!");
+//					}
+//				}
+//			}
+//			else{
+//				List<Map<String,String>> listofFiles = (List<Map<String,String>>) configMap.get("SpecificPasswordLists");
+//				if(listofFiles == null){ throw new RuntimeException("No Password Lists have been specified. Are you sure \"PasswordLookInFolder\" is true?");}
+//				for(int i=0; i<listofFiles.size(); i++){
+//					Map<String,String> entry = listofFiles.get(i);
+//					if(UtilityFunctions.hasPasswordFileExtension(entry.get("Name"))){
+//						PasswordList newList = new PasswordList(entry.get("Name"),entry.get("Path"));
+//						availablePasswordLists.put(entry.get("Name"),newList);
+//					}
+//				}
+//			}
 		}
 
 		/** Worker Configurations **/

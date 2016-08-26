@@ -20,12 +20,12 @@ public enum GearmanServerManager {
 		t = new Thread("GearmanServer"){
 			public void run(){
 				//Check if Gearman server is running. If not, start it
-				String status = UtilityFunctions.sendTextCommandToServer("version");
+				String status = UtilityFunctions.sendTextCommandToGearmanServer("version");
 				int invocations = 1;
 				while(status.isEmpty()){
 					LOG.getLogger().info("Gearman Server Invocation Attempt " + invocations);
 					try{invokeServer();}catch(Exception e){e.printStackTrace();}
-					status = UtilityFunctions.sendTextCommandToServer("version");
+					status = UtilityFunctions.sendTextCommandToGearmanServer("version");
 					LOG.getLogger().info("Failed. Trying " + (Constants.InvocationAttempts-invocations) + " more times");
 					if((Constants.InvocationAttempts-invocations)<= 0){
 						LOG.getLogger().info("Failed to Start Gearman. Check Gearman Settings.");
