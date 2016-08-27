@@ -1,8 +1,40 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-	<title>Under Construction</title>
+	<title>Worker Progress Report</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></meta>
+	
+	<!-- LIBS -->       
+    <script src="Dashboard-Assets/jquery.min.js"></script>
+    <script src="Dashboard-Assets/jqueryUI.js"></script>
+    <script src="Dashboard-Assets/bootstrap.min.js"></script>
+    
+    <!-- STYLES -->
+    <link href="Dashboard-Assets/bootstrap.min.css" rel="stylesheet" type="text/css"></link>
+    <link href="Dashboard-Assets/fonts.css" rel="stylesheet" type="text/css"></link>
+    <link href="Dashboard-Assets/progress_bar.css" rel="stylesheet" type="text/css"></link>
+    
+    <!-- PRIMARY STYLESHEET -->
+    <link href="Dashboard-Assets/styles.css" rel="stylesheet" type="text/css"></link>
+    
+    <!-- PRIMARY JS SCRIPT FILE -->
+    <script src="Dashboard-Assets/script_worker.js"></script>
 </head>
-<body>
-	<h1 style="text-align:center;">Under Construction</h1>
+
+<body>	
+	<div id="container">
+		<div id="content">
+			<h1 style="text-align:center;">Worker Progress Report</h1>
+			
+			<div id="workerprogressreport" class="section">
+				<div id="workerprogressreport_info">
+					<div class="box_element" id="kraken_time"><span>Cracking Time : </span><span class="content"></span></div>
+					<div class="box_element" id="current_id"><span>ID : </span><span class="content"></span></div>
+					<div class="box_element" id="current_type"><span>Type: </span><span class="content"></span></div>
+					<div class="box_element" id="current_ssid"><span>Identifier : </span><span class="content"></span></div>
+					<div class="box_element" id="current_capfile"><span>File : </span><span class="content"></span></div>
+				</div>
+			</div>
+		</div>
+	</div>
 </body>
 </html>

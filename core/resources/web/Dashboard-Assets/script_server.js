@@ -1,4 +1,4 @@
-/* Script for Dashboard */
+/* Script for Server Dashboard */
 
 //Connect DOM objects to Javascript Variables
 
@@ -126,7 +126,7 @@ function iframeLoad(){
         });
         $("#iframe-ghost-div").show(1000);
     }, 5000);
-    send_request_to_servlet(false, "activerequest", "none", update_activerequest_status);
+    //send_request_to_servlet(false, "activerequest", "none", update_activerequest_status);
 }
 
 function pulseAddRequest(){
@@ -152,7 +152,7 @@ function send_request_to_servlet(isform, parameter, payload, return_call){
     xhttp.send("type="+parameter+"&payload="+payload);
 }
 
-//Direct Exectuion
+//Direct Execution
 
 //Update Status Variables every 3 seconds
 setInterval(function(){send_request_to_servlet(false, "status", "none", update_status);}, 2000);
@@ -160,7 +160,7 @@ setInterval(function(){send_request_to_servlet(false, "status", "none", update_s
 //Update Active Request Status every 10 seconds
 setInterval(function(){send_request_to_servlet(false, "activerequest", "none", update_activerequest_status);},2000)
 
-//On load, request Initilization 
+//On load, request Initialization 
 $(document).ready(function(){
     send_request_to_servlet(false, "init" , "none" ,update_init);
     send_request_to_servlet(false, "status", "none", update_status);
