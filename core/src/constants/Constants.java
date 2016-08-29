@@ -47,29 +47,10 @@ public final class Constants {
 	public static Charset[] SupportedCharsets = new Charset[]{StandardCharsets.ISO_8859_1, StandardCharsets.UTF_8, StandardCharsets.UTF_16, StandardCharsets.US_ASCII};
 	
 	/** New Request Responses */
-	public static final String response_success = "<html>" +
-												"<head></head>" +
-												"<body>" +
-													"<center><div><input type=\"text\"" +
-														"style=\"text-align:center;width:150px;border:2px solid #dadada;" +
-														"border-radius:7px;font-size:14px;padding:5px;outline:none;border-color:#9ae59a;" +
-														"box-shadow:0 0 10px #9ae59a;\" value=\"Success\" readonly>" +
-													"</div></center>" +
-												"</body>" +
-											"</html>" ;
+	public static final String newrequest_response_success = "Request Added!";
 	
-	public static final String response_fail_part1 = "<html>" +
-											"<head></head>" +
-											"<body>" +
-												"<center><div><input type=\"text\"" +
-														"style=\"text-align:center;width:150px;border:2px solid #dadada;" +
-														"border-radius:7px;font-size:14px;padding:5px;outline:none;border-color:#ff9999;" +
-														"box-shadow:0 0 10px #ff9999;\" value=\"Failed - ";
-														
-	public static final String response_fail_part2 =  "\" + readonly>" +
-													"</div></center>" +
-											"</body>" +
-										"</html>" ;
+	/** Add Password HTML Responses **/
+	public static final String addpassword_response_success = "Password List Added!";
 	
 	//Added this temporarily Need to read from Configs
 	public static List<String> hostedFunctions = new ArrayList<String>();

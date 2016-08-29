@@ -1,10 +1,34 @@
 /* Script for Server Dashboard */
 
-//Connect DOM objects to Javascript Variables
+//Update Status Variables every 3 seconds
+setInterval(function(){send_request_to_servlet("status", "none", update_status);}, 2000);
 
+//Update Active Request Status every 10 seconds
+setInterval(function(){send_request_to_servlet("activerequest", "none", update_activerequest_status);},2000)
 
+//On load, request Initialization 
+$(document).ready(function(){
+    send_request_to_servlet("init" , "none" ,update_init);
+    send_request_to_servlet("status", "none", update_status);
+    send_request_to_servlet("activerequest", "none", update_activerequest_status);
+    $("#activerequest_info").hide();
+    $("#activerequest_norequest").show();
+    $("#results-list").hide();
+    $("#results_noresult").show();
+    $("#form-result-frame").hide();
+    $("#iframe-ghost-div").show();
+});
 
-//Define Update functions
+// AJAX Call Function
+function send_request_to_servlet(parameter, payload, return_call){
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (xhttp.readyState == 4 && xhttp.status == 200){return_call(xhttp.response);}
+    }
+    xhttp.open("POST", "/serverwebui", true);
+    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhttp.send("type="+parameter+"&payload="+payload);
+}
 
 function update_init(response){
     console.log(response);
@@ -12,25 +36,18 @@ function update_init(response){
     for(var i=0; i<updateObject["PasswordLists"].length; i++){
         $("#nr_password_list_container").append("<div class = \"checkbox\"><label><input type = \"checkbox\" name=\"request-plist\" value=\""+updateObject["PasswordLists"][i]+"\">"+updateObject["PasswordLists"][i]+" <span> - "+updateObject["PasswordListSizes"][i]+" </span></label></div>");
     }
-    
     for(var i=0; i<updateObject["Algorithms"].length; i++){
         $("#nr_algo").append("<option value=\""+updateObject["Algorithms"][i]+"\">"+updateObject["Algorithms"][i]+"</option>");
     }
-    
     for(var i=0; i<updateObject["Results"].length; i++){
         addResultToResultSection(updateObject["Results"][i]);
     }
-    
-    $(".splitcol-right").height($(".splitcol-left").height);
 };
 
-//local variable
 var completedRequests = 0;
-
 var update_status = function (response){
     console.log(response);
     updateObject = JSON.parse(response);
-    
     //Global Elements
     $("#glbl_uptime").children(".content").text(updateObject["Uptime"]);
     $("#glbl_onlineworkers").children(".content").text(updateObject["Onlineworkers"]);
@@ -48,9 +65,6 @@ var update_status = function (response){
         completedRequests = completedRequests +1;
         $("#glbl_completedrequests").children(".content").text(completedRequests);
     }
-    
-    
-    
     //Results Section
     if(updateObject.hasOwnProperty("Result")){
         addResultToResultSection(updateObject["Result"]);
@@ -63,7 +77,6 @@ function addResultToResultSection(resultObject){
             $("#results-list").show(100);
     }
      $("#results-list").append("<div class=\"result-entry\"><div>UUID : <span>"+resultObject["Uuid"]+"</span></div><div>Identifier : <span>"+resultObject["Identifier"]+"</span></div>                                <div>File : <span>"+resultObject["Filename"]+"</span></div><div>Password : <span>"+resultObject["Password"]+"</span></div><div>Status : <span>"+resultObject["Status"]+"</span><div></div>");
-    
 }
 
 var update_activerequest_status = function (response){
@@ -104,30 +117,8 @@ var update_activerequest_status = function (response){
         
         $("#act_currentplistprogressbar").children(".progress-bar").width(percentage + '%');
         $("#act_currentplistprogressbar").children(".content").text(percentage.toString()+"% Complete");    
-        console.log(percentage.toString()+"% Complete")
     }
 };
-
-var update_newrequest = function (response){
-    
-};
-
-var submit_newrequest = function (response){
-    
-};
-
-function iframeLoad(){
-   $("#form-result-frame").show(1000);
-    $("#iframe-ghost-div").hide(1000);
-    setTimeout(function(){
-        document.getElementById('nr_request_form').reset();
-        $('#form-result-frame').hide(1000,function(){
-            $('#form-result-frame').attr('src', "");
-        });
-        $("#iframe-ghost-div").show(1000);
-    }, 5000);
-    //send_request_to_servlet(false, "activerequest", "none", update_activerequest_status);
-}
 
 function pulseAddRequest(){
     $('html, body').animate({ scrollTop: $("#new_request").offset().top }, 1200,"easeOutQuint");
@@ -141,35 +132,12 @@ function pulseResults(){
             .animate( { backgroundColor: "transparent" }, 500 );
 }
 
-// AJAX Call Function
-function send_request_to_servlet(isform, parameter, payload, return_call){
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        if (xhttp.readyState == 4 && xhttp.status == 200){return_call(xhttp.response);}
-    }
-    xhttp.open("POST", "/serverwebui", true);
-    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xhttp.send("type="+parameter+"&payload="+payload);
+function showSnackbar(message){
+    $("#snackbar-text").text(message);
+    $("#snackbar").addClass("show");
+    setTimeout(function(){ $("#snackbar").removeClass("show") }, 3000);
 }
 
-//Direct Execution
 
-//Update Status Variables every 3 seconds
-setInterval(function(){send_request_to_servlet(false, "status", "none", update_status);}, 2000);
 
-//Update Active Request Status every 10 seconds
-setInterval(function(){send_request_to_servlet(false, "activerequest", "none", update_activerequest_status);},2000)
-
-//On load, request Initialization 
-$(document).ready(function(){
-    send_request_to_servlet(false, "init" , "none" ,update_init);
-    send_request_to_servlet(false, "status", "none", update_status);
-    send_request_to_servlet(false, "activerequest", "none", update_activerequest_status);
-    $("#activerequest_info").hide();
-    $("#activerequest_norequest").show();
-    $("#results-list").hide();
-    $("#results_noresult").show();
-    $("#form-result-frame").hide();
-    $("#iframe-ghost-div").show();
-});
 

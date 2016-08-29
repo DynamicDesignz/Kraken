@@ -18,15 +18,32 @@ WebUIPort: 8080
 #Temporary Folder Location
 TemporaryFilesFolder: ./kraken-tmp/
 
-#Hosted Functions
-HostedFunctions : [ WPA/WPA2 ]
+#***************************************************************#
+#*                                                             *#
+#*                        Worker Settings                      *#
+#*                                                             *#
+#***************************************************************#
+#Gearman Server-to-connect-to IP
+JobServerIP : 198.162.52.98
+#Gearman Server-to-connect-to Port 
+JobServerPort : 4730
 
 #***************************************************************#
 #*                                                             *#
 #*                        Server Settings                      *#
 #*                                                             *#
 #***************************************************************#
+#Server Port Configuraitons
+# Info : This specifies the ports on which Gearman Server will run on.
+GearmanServerPort: 4730
 
+#***************************************************************#
+#*                                                             *#
+#*                 Advanced Server Settings                    *#
+#*                                                             *#
+#***************************************************************#
+
+#Gearman Server type
 GearmanServerType: Java
 GearmanVersion : "0.6.6"
 GearmanExecuteCommand : ""
@@ -34,9 +51,8 @@ GearmanExecuteCommand : ""
 #GearmanVersion: "OK 1.1.12"
 #GearmanExecuteCommand: "gearmand"
 
-#Server Port Configuraitons
-# Info : This specifies the ports on which Gearman Server will run on.
-GearmanServerPort: 4730
+#Hosted Functions
+HostedFunctions : [ WPA/WPA2 ]
 
 #Interval between checking for new Workers in milliseconds
 QueryGearmanWorkersInterval: 2000
@@ -50,15 +66,8 @@ InvocationAttempts: 3
 #Search pattern
 # Info : What type of a Search pattern to use when scanning Lists
 # Options : Optimize : For small files, random chunks will be searched.
-#					   for large files, chunks will be searched linearly.
-#			Linear : All files are searched linearly. Faster for large files.
+#            for large files, chunks will be searched linearly.
+#     Linear : All files are searched linearly. Faster for large files.
 #           Random : All files are searched randomly. Slow for large files.
 SearchPattern: Optimize
 
-#***************************************************************#
-#*                                                             *#
-#*                        Worker Settings                      *#
-#*                                                             *#
-#***************************************************************#
-JobServerIP : 198.162.52.98
-JobServerPort : 4730

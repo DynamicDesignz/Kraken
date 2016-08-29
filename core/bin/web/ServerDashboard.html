@@ -21,50 +21,56 @@
         <div id="container">
             <div id="menu">
                 <ul>
-                    <li onclick="pulseAddRequest()"><a>Add New Request</a></li>
+                    <li><a data-toggle="modal" data-target="#newrequest-modal">Add New Request</a></li>
+                    <li><a data-toggle="modal" data-target="#passwordlist-modal">Add Password List</a></li>
+                    <li onclick=""><a>Manage Password Lists</a></li>
                     <li onclick="pulseResults()"><a>See Results</a></li>
                     <!--<li><a href="">Inspect Request List</a></li>-->
-
                 </ul>
             </div>
+            
+            <h1>Kraken - <span id="kraken-version">0.1.1</span></h1> 
+            <h3><i>Release the Passwords!</i></h3>    
+            
             <div id="content">
-                <h1>Kraken - 0.1.1</h1> <h3><i>Release the Passwords!</i></h3>    
-                
                 <div class="info">
                     <div class="box" id="glbl_uptime">
-                        <span class="number content">0</span> <span class="text">Uptime</span>
+                        <span class="number content">0</span>
+                        <span class="text">Uptime</span>
                     </div>
 
                     <div class="box" id="glbl_onlineworkers">
-                        <span class="number content">0</span> <span class="text">Online Workers</span>
+                        <span class="number content">0</span>
+                        <span class="text">Online Workers</span>
                     </div>
                     
                     <div class="box" id="glbl_activeworkers">
-                        <span class="number content">0</span> <span class="text">Active Workers</span>
+                        <span class="number content">0</span>
+                        <span class="text">Active Workers</span>
                     </div>
 
                     <div class="box" id="glbl_requestsinqueue">
-                        <span class="number content">0</span> <span class="text">Requests In Queue</span>
+                        <span class="number content">0</span>
+                        <span class="text">Requests In Queue</span>
                     </div>
 
                     <div class="box" id="glbl_usedmemory">
-                        <span class="number content">0%</span> <span class="text">Used memory<br>
-        
-                        </span>
+                        <span class="number content">0%</span> 
+                        <span class="text">Used memory<br></span>
                     </div>
                     
                     <div class="box" id="glbl_gearmanstatus">
                         <div class="number content circle" style="background-color: #FF0000;"></div>        <span class="text">Gearman Server Status</span>
                     </div>
-                    
 <!--
                     <div class="box" id="glbl_completedrequests">
                         <span class="number content">0</span> <span class="text">Completed Requests<br>
                         </span>
                     </div>
 -->
-
                     <div class="clear"></div>
+                    
+                    <!-- Options Panel -->
                     <div class="panel-group">
                         <div class="panel panel-default">
                             <div class="panel-heading" style="text-align:center;" data-toggle="collapse" href="#collapse1">
@@ -75,14 +81,20 @@
                             <div id="collapse1" class="panel-collapse collapse">
                                 <div class="panel-body info">
                                     
-                                    
                                     <div class="box" id="glbl_addpasswordlist">
-                                    	<div class = "fileUpload btn btn-default">
-                                    		<span>Add</span>
-                                			<input type = "file" class="upload">
-                                		</div>
+                                        <div class="number content" >
+                                            <button type="button" class="btn btn-info btn" data-toggle="modal" data-target="#passwordlist-modal" style="display:block;margin:auto;margin-top: 20px;margin-bottom: 20px;"><span class="glyphicon glyphicon-plus" style="font-size: 25px;" ></span></button>
+                                        </div>
                                 		<span class="text">Add Password List</span>
                                     </div>
+                                    
+                                    <div class="box" id="glbl_addnewrequest">
+                                        <div class="number content" >
+                                            <button type="button" class="btn btn-info btn" data-toggle="modal" data-target="#newrequest-modal" style="display:block;margin:auto;margin-top: 20px;margin-bottom: 20px;"><span class="glyphicon glyphicon-plus" style="font-size: 25px;" ></span></button>
+                                        </div>
+                                		<span class="text">Add a New Request</span>
+                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -123,14 +135,72 @@
             </div>
             <!-- End of Active Request Section -->
             
-            
-            <div >
+                <!-- Start of Results Section -->
                 
-                <!-- New Request Section -->
-                <div class="splitcol-left">
-                    <div id="new_request" class="section" href="#new_request">
-                        <h4>New Request</h4>
-                        <form role= "form" id="nr_request_form" action="serverwebui" method="POST" enctype="multipart/form-data" onsubmit="iframeLoad()" target="form-result">
+            <div id="request_list" class="section"> 
+                <h4> Request Results</h4>
+                <div class="scroller" id="results-list">
+<!--
+                    <div class="result-entry">
+                        <div id="res_id">UUID : <span class="content">432423423243234</span></div>
+                        <div id="res_file">File : <span class="content">dsfdsfsfsf.cap</span></div>
+                        <div id="res_result">Password : <span class="content">NOT FOUND</span></div>
+                        <div id="res_status">Status : <span class="content">Complete</span>
+                        <div>
+                    </div>
+-->
+                </div>
+                <div id="results_noresult" class="no-result">
+                    <span>- No Results Received -</span>
+                </div>
+            </div>
+                
+            
+
+        
+        <!-- Modal Section -->
+        <!-- Add PasswordList Modal -->
+        <div class="modal fade" id="passwordlist-modal" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                      <h4 class="modal-title">Add a Password</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form role="form" id="passwordlist_add_form" action="serverwebui" method="POST" target="password_form_result">
+                            <div class = "form-group box_element">
+                                    <label for = "name">Name</label>
+                                    <input type = "text" class = "form-control" placeholder = "eg mylist.txt" name="name-passwordlist" required>
+                            </div>
+                            <div class = "form-group box_element">
+                                    <label for = "name">Full Path</label>
+                                    <input type = "text" class = "form-control" placeholder = "eg /home/user/mylist.txt" name="path-passwordlist" required>
+                            </div>
+                            <div class="form-group box_element"> 
+                                <button type="submit" style="text-align:center;" class="btn btn-default">Submit</button>
+                            </div>
+                        </form>
+                        <iframe name="password_form_result" style="display:none" scrolling="no"></iframe>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+         </div>
+         <!-- End of Add Password List Modal -->
+         
+         <!-- New Request Modal -->
+         <div class="modal fade" id="newrequest-modal" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                      <h4 class="modal-title">New Request</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form role= "form" id="nr_request_form" action="serverwebui" method="POST" enctype="multipart/form-data" target="new-request-form-result">
                             <div class = "form-group box_element">
                                 <label for = "name">Target Algorithm:</label>
                                 <select id="nr_algo" style="float:right;margin-right:30%" name="request-type">
@@ -159,43 +229,20 @@
                                 <button type="submit" class="btn btn-default" >Submit</button>
                             </div>
                         </form>
-                        <iframe id="form-result-frame" name="form-result" width="100%" height="40" style="border: none;overflow:hidden;" scrolling="no" ></iframe>
-                        <div style="height:40px" id="iframe-ghost-div" ></div>
+                        <iframe name="new-request-form-result" style="display:none" scrolling="no"></iframe>
                     </div>
-                </div>
-                <!-- End of New Request Section -->
-                
-                
-                <!-- Start of Results Section -->
-                <div class="splitcol-right">
-                    <div id="request_list" class="section"> 
-                        <h4> Request Results</h4>
-                        <div class="scroller" id="results-list">
-<!--
-                            <div class="result-entry">
-                                <div id="res_id">UUID : <span class="content">432423423243234</span></div>
-                                <div id="res_file">File : <span class="content">dsfdsfsfsf.cap</span></div>
-                                <div id="res_result">Password : <span class="content">NOT FOUND</span></div>
-                                <div id="res_status">Status : <span class="content">Complete</span>
-                                <div>
-                            </div>
--->
-                        </div>
-                        <div id="results_noresult" class="no-result">
-                            <span>- No Results Received -</span>
-                        </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
+         </div>
             
-            
-           
-            
-            
-            
-            
-            
-        </div>
+        <!-- SnackBar Section -->    
+        <div id="snackbar"><span id="snackbar-text">Some text some message..</span></div>
+        
+        
+        
 
 
     </body>

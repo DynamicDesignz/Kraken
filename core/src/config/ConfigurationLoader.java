@@ -79,39 +79,12 @@ public enum ConfigurationLoader {
 				InputStream is = this.getClass().getClassLoader().getResourceAsStream("password_list/defaultList.txt");
 				Files.write(defaultListPath, IOUtils.toByteArray(is));
 			}
-			PasswordList defaultList = new PasswordList("10kcommon.txt",defaultListPath.toString());
-			availablePasswordLists.put("10kcommon.txt", defaultList);
-			Files.deleteIfExists(defaultListPath);
+			PasswordList defaultList = new PasswordList("defaultList.txt",defaultListPath.toString());
+			availablePasswordLists.put("defaultList.txt", defaultList);
 			
 			if(!Files.exists(Paths.get(Constants.TemporaryFolderLocation, "PasswordList.db"))){
 				UtilityFunctions.createEmptyPasswordListDB();
 			}
-			
-//			boolean lookInFolder = (boolean) configMap.get("PasswordLookInFolder");
-//			Constants.PasswordListExtensions = (List<String>) configMap.get("PasswordListSupportedFormats");
-//			if(lookInFolder){
-//				Constants.PasswordListFolderLocation = (String) configMap.get("PasswordListFolder");
-//				File[] listOfFiles = new File(Constants.PasswordListFolderLocation).listFiles();
-//				for(int i =0; i< listOfFiles.length; i++){
-//					if(UtilityFunctions.hasPasswordFileExtension(listOfFiles[i].getName())){
-//						LOG.getLogger().info("Processing PasswordList " + listOfFiles[i].getName() + "...");
-//						PasswordList newList = new PasswordList(listOfFiles[i].getName());
-//						availablePasswordLists.put(listOfFiles[i].getName(),newList);
-//						LOG.getLogger().info("Load Complete!");
-//					}
-//				}
-//			}
-//			else{
-//				List<Map<String,String>> listofFiles = (List<Map<String,String>>) configMap.get("SpecificPasswordLists");
-//				if(listofFiles == null){ throw new RuntimeException("No Password Lists have been specified. Are you sure \"PasswordLookInFolder\" is true?");}
-//				for(int i=0; i<listofFiles.size(); i++){
-//					Map<String,String> entry = listofFiles.get(i);
-//					if(UtilityFunctions.hasPasswordFileExtension(entry.get("Name"))){
-//						PasswordList newList = new PasswordList(entry.get("Name"),entry.get("Path"));
-//						availablePasswordLists.put(entry.get("Name"),newList);
-//					}
-//				}
-//			}
 		}
 
 		/** Worker Configurations **/

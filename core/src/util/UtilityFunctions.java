@@ -116,10 +116,10 @@ public class UtilityFunctions {
 		Statement stmt = null;
 		try{
 			Class.forName("org.sqlite.JDBC");
-		    c = DriverManager.getConnection("jdbc:sqlite:"+Constants.TemporaryFolderLocation+"test.db");
+		    c = DriverManager.getConnection("jdbc:sqlite:"+Constants.TemporaryFolderLocation+"PasswordList.db");
 		    LOG.getLogger().info("Creating PasswordList Database");
 		    stmt = c.createStatement();
-		      String sql = "CREATE TABLE COMPANY " +
+		      String sql = "CREATE TABLE LISTS " +
 		                   "(Name TEXT PRIMARY KEY     NOT NULL," +
 		                   " Path           TEXT    NOT NULL, " + 
 		                   " Linecount            INT     NOT NULL, " + 
@@ -132,6 +132,17 @@ public class UtilityFunctions {
 	      System.err.println( e.getClass().getName() + ": " + e.getMessage() );
 	      System.exit(0);
 	    }
+	}
+	
+	 //"<html><head><script>parent.showSnackbar(\"Password List Added\");</script></head></html>";
+	public static String craftwebuiFormReply(boolean success, String snackbarMessage){
+		StringBuilder sb = new StringBuilder();
+		sb.append("<html><head><script>");
+		sb.append("parent.showSnackbar(\"");
+		sb.append(snackbarMessage);
+		sb.append("\");");
+		sb.append("</script></head></html>");
+		return sb.toString();
 	}
 	
 }

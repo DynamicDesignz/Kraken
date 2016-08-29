@@ -59,17 +59,28 @@ public class ServerWebUIServlet extends HttpServlet
     	if(typeParameter == null){
     		// New Request
     		if(ServletFileUpload.isMultipartContent(request)){
-    			//Create empty new Request
     			Request newRequest = new Request();
     			try{
     				newRequest.createRequest(request);
     				GearmanJobManager.getInstance().addRequest(newRequest);
-    				response.getWriter().println(Constants.response_success);
+    				System.out.println(UtilityFunctions.craftwebuiFormReply(true, Constants.newrequest_response_success));
+    				response.getWriter().println(UtilityFunctions.craftwebuiFormReply(true, Constants.newrequest_response_success));
     			}
     			catch(Exception e){
     				System.out.println("Request could not be made " + e.getMessage());
-    				response.getWriter().println(Constants.response_fail_part1 + e.getMessage() + Constants.response_fail_part2);
+    				response.getWriter().println(UtilityFunctions.craftwebuiFormReply(false, e.getMessage()));
     			}
+    		}
+    		// Add Password
+    		else{
+    			try{
+    				PasswordList newList = new PasswordList(request.getParameter("name-passwordlist"),request.getParameter("path-passwordlist"));
+    				if(ConfigurationLoader.getInstance().getAvailablePasswordLists().containsKey(newList.getName())){throw new RuntimeException("Password List Name Already Exists");}
+    				ConfigurationLoader.getInstance().getAvailablePasswordLists().put(request.getParameter("name-passwordlist"),newList);
+    				System.out.println(UtilityFunctions.craftwebuiFormReply(true, Constants.addpassword_response_success));
+    				response.getWriter().println(UtilityFunctions.craftwebuiFormReply(true, Constants.addpassword_response_success));
+    			}
+    			catch(Exception e){response.getWriter().println(UtilityFunctions.craftwebuiFormReply(false, e.getMessage()));}
     		}
     	}
     	else if (typeParameter.equals("status")){
@@ -84,20 +95,12 @@ public class ServerWebUIServlet extends HttpServlet
     		//Update Active Request
     		response.getWriter().println(handle_activerequest(returnObject));
     	}
-    	else if (typeParameter.equals("addpasswordlist")){
-    		response.getWriter().println(handle_addpasswordlist(returnObject));
-    	}
     	else{
     		System.out.println("Unknown Request from Web UI");
     		response.sendError(500);
     	}
     }
     
-    JSONObject handle_addpasswordlist(JSONObject returnObject) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	@SuppressWarnings("unchecked")
 	JSONObject handle_initialize(JSONObject returnObject){
     	
