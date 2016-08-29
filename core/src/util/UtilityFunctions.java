@@ -138,9 +138,17 @@ public class UtilityFunctions {
 	public static String craftwebuiFormReply(boolean success, String snackbarMessage){
 		StringBuilder sb = new StringBuilder();
 		sb.append("<html><head><script>");
+		//Show Snackbar
 		sb.append("parent.showSnackbar(\"");
 		sb.append(snackbarMessage);
 		sb.append("\");");
+		
+		//If successful, close modal and reset form
+		if(success){
+			sb.append("parent.closeModals();");
+			sb.append("parent.resetForms();");
+		}
+		
 		sb.append("</script></head></html>");
 		return sb.toString();
 	}

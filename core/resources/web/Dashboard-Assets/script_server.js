@@ -138,6 +138,15 @@ function showSnackbar(message){
     setTimeout(function(){ $("#snackbar").removeClass("show") }, 3000);
 }
 
+function resetForms(){
+    $('#nr_request_form')[0].reset();
+    $('#passwordlist_add_form')[0].reset();
+}
+
+function closeModals(){
+    $('#newrequest-modal').modal("hide");
+    $('#passwordlist-modal').modal("hide");
+}
 
 
 
