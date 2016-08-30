@@ -85,6 +85,7 @@ public enum ConfigurationLoader {
 			if(!Files.exists(Paths.get(Constants.TemporaryFolderLocation, "PasswordList.db"))){
 				UtilityFunctions.createEmptyPasswordListDB();
 			}
+			UtilityFunctions.loadPasswordListsFromDB();
 		}
 
 		/** Worker Configurations **/
