@@ -92,7 +92,7 @@ public class Kraken {
 
 		}
 		
-		//Starting Workers If if on Worker Mode
+		//Starting Workers If it's on Worker Mode
 		if(Constants.StartupMode.contains("Worker")){
 			LOG.getLogger().info("Starting Worker....");
 			KrakenWorker kWorker = new KrakenWorker();

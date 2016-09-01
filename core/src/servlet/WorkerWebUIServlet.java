@@ -12,17 +12,16 @@ import org.json.simple.JSONObject;
 
 import managers.jobmgr.GearmanJobManager;
 import objects.Request;
+import worker.KrakenWorker;
 
 
 
 public class WorkerWebUIServlet extends HttpServlet
 {
 	private static final long serialVersionUID = -4398153267502740296L;
-	private long time_at_start;
 	private Request currentRequest;
 	
     public WorkerWebUIServlet(){
-    	time_at_start=System.currentTimeMillis();
     }
     
     /*
@@ -48,19 +47,8 @@ public class WorkerWebUIServlet extends HttpServlet
 	
 	@SuppressWarnings("unchecked")
 	JSONObject handle_status(JSONObject returnObject) {
-		// Compute how long the Worker has been cracking
-		long cracking_time = System.currentTimeMillis()-time_at_start;
-		String time = null;
 		
-		if (TimeUnit.MILLISECONDS.toMinutes(cracking_time)<60){
-			time = Long.toString(TimeUnit.MILLISECONDS.toMinutes(cracking_time)) + " M";
-		}else if(TimeUnit.MICROSECONDS.toHours(cracking_time)<24){
-			time = Long.toString(TimeUnit.MILLISECONDS.toHours(cracking_time))+" H";
-		}else if (TimeUnit.MILLISECONDS.toDays(cracking_time)<30){
-			time = Long.toString(TimeUnit.MILLISECONDS.toDays(cracking_time)) + " D";
-		}
-		
-		returnObject.put("krakenTime", time);
+		returnObject.put("krakenTime", workerKrakenTime());
 		
 		if(GearmanJobManager.getInstance().hasActiveRequest()){
 			// currentRequest that the Worker has been working on
@@ -75,5 +63,25 @@ public class WorkerWebUIServlet extends HttpServlet
 		return returnObject;
 	}
     
+	private String workerKrakenTime(){
+		long time_at_start = KrakenWorker.time_at_start;
+		long cracking_time=0;
+		String time = null;
+		
+		if(time_at_start>0){
+			cracking_time = System.currentTimeMillis()-time_at_start;
+			
+			if (TimeUnit.MILLISECONDS.toMinutes(cracking_time)<60){
+				time = Long.toString(TimeUnit.MILLISECONDS.toMinutes(cracking_time)) + " M";
+			}else if(TimeUnit.MICROSECONDS.toHours(cracking_time)<24){
+				time = Long.toString(TimeUnit.MILLISECONDS.toHours(cracking_time))+" H";
+			}else if (TimeUnit.MILLISECONDS.toDays(cracking_time)<30){
+				time = Long.toString(TimeUnit.MILLISECONDS.toDays(cracking_time)) + " D";
+			}
+		}else {
+			time = "0 M";
+		}
+		return time;
+	}
     
 }

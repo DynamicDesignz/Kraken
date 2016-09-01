@@ -29,7 +29,9 @@ public class KrakenWorker implements GearmanFunction{
 	GearmanWorker worker;
 	Path pathToCapFile = Paths.get(Constants.TemporaryFolderLocation, "pcap.cap");
 	Path pathToListFile = Paths.get(Constants.TemporaryFolderLocation, "pwfile.txt");
-
+	
+	public static long time_at_start;
+	
 	public void createWorker(){
 		gearman = Gearman.createGearman();
 		server = gearman.createGearmanServer(Constants.JobServerIP, Constants.JobServerPort);
@@ -72,11 +74,13 @@ public class KrakenWorker implements GearmanFunction{
 			//Create PcapFile
 			createCapFile(job);
 			
-			//Time
+			//Time the worker begin to crack
+			time_at_start=System.currentTimeMillis();
 			
 			//Crack
 			LOG.getLogger().info("Cracking....");
 			replyBuilder = crackJob(replyBuilder,job);
+			
 			break;
 		default:
 			LOG.getLogger().error("There was supported function called " + function);
