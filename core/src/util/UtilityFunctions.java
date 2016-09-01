@@ -18,6 +18,7 @@ import objects.PasswordList;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jetty.util.log.Log;
 
+import config.ConfigurationLoader;
 import constants.Constants;
 
 public class UtilityFunctions {
@@ -123,8 +124,8 @@ public class UtilityFunctions {
 			String sql = "CREATE TABLE LISTS " +
 					"(Name TEXT PRIMARY KEY     NOT NULL," +
 					" Path           TEXT    NOT NULL, " + 
-					" Linecount            INT     NOT NULL, " + 
-					" Size        LONG, " + 
+					" Linecount            LONG     NOT NULL, " + 
+					" Size        TEXT, " + 
 					" Charset         TEXT)"; 
 			stmt.executeUpdate(sql);
 			stmt.close();
@@ -135,8 +136,17 @@ public class UtilityFunctions {
 		}
 	}
 	
-	public static void loadPasswordListsFromDB(){
-		
+	public static void loadPasswordListsFromDB() throws Exception{
+		Connection c = null;
+		Statement stmt = null;
+		Class.forName("org.sqlite.JDBC");
+		c = DriverManager.getConnection("jdbc:sqlite:"+Constants.TemporaryFolderLocation+"PasswordList.db");
+		stmt = c.createStatement();
+	    ResultSet rs = stmt.executeQuery( "SELECT * FROM LISTS;" );
+	    while(rs.next()){
+	    	PasswordList p = new PasswordList(rs.getString("name"),rs.getString("path"));
+	    	ConfigurationLoader.getInstance().getAvailablePasswordLists().put(rs.getString("name"), p);
+	    }
 	}
 
 	public static void insertPasswordListIntoDB(PasswordList pwdList) throws ClassNotFoundException, SQLException{
@@ -148,15 +158,15 @@ public class UtilityFunctions {
 		stmt = c.createStatement();
 		StringBuilder sql = new StringBuilder();
 		sql.append("INSERT INTO LISTS VALUES(");
-		sql.append(pwdList.getName() );
+		sql.append("'"+pwdList.getName() +"'");
 		sql.append(",");
-		sql.append(pwdList.getPath().toString());
+		sql.append("'"+pwdList.getPath().toString()+"'");
 		sql.append(",");
 		sql.append(pwdList.getLineCount());
 		sql.append(",");
-		sql.append(pwdList.getSize());
+		sql.append("'"+pwdList.getSize()+"'");
 		sql.append(",");
-		sql.append(pwdList.getCharset().toString());
+		sql.append("'"+pwdList.getCharset().toString()+"'");
 		sql.append(");");
 		stmt.executeUpdate(sql.toString());
 		stmt.close();
@@ -177,7 +187,8 @@ public class UtilityFunctions {
 			sb.append("parent.closeModals();");
 			sb.append("parent.resetForms();");
 		}
-
+		
+		sb.append("parent.formReturnEvent();");
 		sb.append("</script></head></html>");
 		return sb.toString();
 	}

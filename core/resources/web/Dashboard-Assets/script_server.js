@@ -9,6 +9,7 @@ setInterval(function(){send_request_to_servlet("activerequest", "none", update_a
 //On load, request Initialization 
 $(document).ready(function(){
     send_request_to_servlet("init" , "none" ,update_init);
+    send_request_to_servlet("passwordlists", "none", update_passwords);
     send_request_to_servlet("status", "none", update_status);
     send_request_to_servlet("activerequest", "none", update_activerequest_status);
     $("#activerequest_info").hide();
@@ -33,9 +34,6 @@ function send_request_to_servlet(parameter, payload, return_call){
 function update_init(response){
     console.log(response);
     updateObject = JSON.parse(response);
-    for(var i=0; i<updateObject["PasswordLists"].length; i++){
-        $("#nr_password_list_container").append("<div class = \"checkbox\"><label><input type = \"checkbox\" name=\"request-plist\" value=\""+updateObject["PasswordLists"][i]+"\">"+updateObject["PasswordLists"][i]+" <span> - "+updateObject["PasswordListSizes"][i]+" </span></label></div>");
-    }
     for(var i=0; i<updateObject["Algorithms"].length; i++){
         $("#nr_algo").append("<option value=\""+updateObject["Algorithms"][i]+"\">"+updateObject["Algorithms"][i]+"</option>");
     }
@@ -43,6 +41,15 @@ function update_init(response){
         addResultToResultSection(updateObject["Results"][i]);
     }
 };
+
+function update_passwords(response){
+    console.log(response);
+    updateObject = JSON.parse(response);
+    $("#nr_password_list_container").empty();
+    for(var i=0; i<updateObject["PasswordLists"].length; i++){
+        $("#nr_password_list_container").append("<div class = \"checkbox\"><label><input type = \"checkbox\" name=\"request-plist\" value=\""+updateObject["PasswordLists"][i]+"\">"+updateObject["PasswordLists"][i]+" <span> - "+updateObject["PasswordListSizes"][i]+" </span></label></div>");
+    }
+}
 
 var completedRequests = 0;
 var update_status = function (response){
@@ -138,9 +145,17 @@ function showSnackbar(message){
     setTimeout(function(){ $("#snackbar").removeClass("show") }, 3000);
 }
 
+function formReturnEvent(){
+    $('.kraken-submit').each(function(i,obj){
+        $(obj).html("Submit");
+    });
+}
+
 function resetForms(){
     $('#nr_request_form')[0].reset();
     $('#passwordlist_add_form')[0].reset();
+    send_request_to_servlet("passwordlists", "none", update_passwords);
+    send_request_to_servlet("activerequest", "none", update_activerequest_status);
 }
 
 function closeModals(){
@@ -148,5 +163,9 @@ function closeModals(){
     $('#passwordlist-modal').modal("hide");
 }
 
-
+function formSendEvent(){
+    $('.kraken-submit').each(function(i,obj){
+        $(obj).html("<span class=\"glyphicon glyphicon-refresh glyphicon-refresh-animate\"></span> Loading...</button>");
+    });
+}
 

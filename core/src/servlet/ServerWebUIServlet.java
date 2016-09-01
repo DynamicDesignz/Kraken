@@ -77,7 +77,7 @@ public class ServerWebUIServlet extends HttpServlet
     				PasswordList newList = new PasswordList(request.getParameter("name-passwordlist"),request.getParameter("path-passwordlist"));
     				if(ConfigurationLoader.getInstance().getAvailablePasswordLists().containsKey(newList.getName())){throw new RuntimeException("Password List Name Already Exists");}
     				ConfigurationLoader.getInstance().getAvailablePasswordLists().put(request.getParameter("name-passwordlist"),newList);
-    				System.out.println(UtilityFunctions.craftwebuiFormReply(true, Constants.addpassword_response_success));
+    				UtilityFunctions.insertPasswordListIntoDB(newList);
     				response.getWriter().println(UtilityFunctions.craftwebuiFormReply(true, Constants.addpassword_response_success));
     			}
     			catch(Exception e){response.getWriter().println(UtilityFunctions.craftwebuiFormReply(false, e.getMessage()));}
@@ -91,6 +91,10 @@ public class ServerWebUIServlet extends HttpServlet
     		//Update Web UI at Initialization
     		response.getWriter().println(handle_initialize(returnObject));
     	}
+    	else if (typeParameter.equals("passwordlists")){
+    		//Update Web UI of Password Lists
+    		response.getWriter().println(handle_passwordlists(returnObject));
+    	}
     	else if (typeParameter.equals("activerequest")){
     		//Update Active Request
     		response.getWriter().println(handle_activerequest(returnObject));
@@ -103,18 +107,6 @@ public class ServerWebUIServlet extends HttpServlet
     
 	@SuppressWarnings("unchecked")
 	JSONObject handle_initialize(JSONObject returnObject){
-    	
-    	// PasswordLists
-    	JSONArray pLists = new JSONArray();
-    	JSONArray pListSizes = new JSONArray();
-    	
-    	
-    	for(Entry<String, PasswordList> entry : ConfigurationLoader.getInstance().getAvailablePasswordLists().entrySet()){
-    		pLists.add(new String(entry.getKey()));
-    		pListSizes.add(entry.getValue().getSize());
-    	}
-    	returnObject.put("PasswordLists", pLists);
-    	returnObject.put("PasswordListSizes", pListSizes);
     	
     	// Algorithms
     	JSONArray algo = new JSONArray();
@@ -137,6 +129,30 @@ public class ServerWebUIServlet extends HttpServlet
     	returnObject.put("Results",results);
 		return returnObject;
     }
+	
+	@SuppressWarnings("unchecked")
+	JSONObject handle_passwordlists(JSONObject returnObject){
+		// PasswordLists
+    	JSONArray pLists = new JSONArray();
+    	JSONArray pListSizes = new JSONArray();
+    	JSONArray pListPaths = new JSONArray();
+    	JSONArray pListLineCounts = new JSONArray();
+    	JSONArray pListCharsets = new JSONArray();
+    	
+    	for(Entry<String, PasswordList> entry : ConfigurationLoader.getInstance().getAvailablePasswordLists().entrySet()){
+    		pLists.add(new String(entry.getKey()));
+    		pListSizes.add(entry.getValue().getSize());
+    		pListLineCounts.add(entry.getValue().getLineCount());
+    		pListPaths.add(entry.getValue().getPath().toString());
+    		pListCharsets.add(entry.getValue().getCharset().toString());
+    	}
+    	returnObject.put("PasswordLists", pLists);
+    	returnObject.put("PasswordListSizes", pListSizes);
+    	returnObject.put("PasswordListLineCounts", pListLineCounts);
+    	returnObject.put("PasswordListPaths", pListPaths);
+    	returnObject.put("PasswordListCharsets",pListCharsets);    	
+		return returnObject;
+	}
     
     @SuppressWarnings({ "unchecked"})
 	JSONObject handle_status(JSONObject returnObject){
