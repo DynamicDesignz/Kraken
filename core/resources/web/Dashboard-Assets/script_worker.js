@@ -24,7 +24,7 @@ var update_status = function(response){
 };
 
 //AJAX Call Function
-function send_request_to_servlet(isform, parameter, payload, return_call){
+function send_request_to_servlet(parameter, payload, return_call){
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
         if (xhttp.readyState == 4 && xhttp.status == 200){return_call(xhttp.response);}
@@ -35,11 +35,11 @@ function send_request_to_servlet(isform, parameter, payload, return_call){
 }
 
 // Update Status Variables every 2 seconds
-setInterval(function(){send_request_to_servlet(false, "status", "none", update_status);}, 2000);
+setInterval(function(){send_request_to_servlet("status", "none", update_status);}, 2000);
 
 // On load, request initialization
 $(document).ready(function(){
 	initWebUI();
-	send_request_to_servlet(false, "status", "none", update_status);
+	send_request_to_servlet("status", "none", update_status);
 });
 
