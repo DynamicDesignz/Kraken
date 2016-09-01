@@ -29,10 +29,8 @@ public class WorkerWebUIServlet extends HttpServlet
      */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
 		JSONObject returnObject = new JSONObject();
-		System.out.println("the value of request is "+request.toString());
 
 		String typeParameter = request.getParameter("type");
-		System.out.println("the value of typeParameter is "+typeParameter);
  
 		if(typeParameter == null) {
 			// Do nothing
