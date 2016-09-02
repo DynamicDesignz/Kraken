@@ -18,9 +18,11 @@
     <script src="Dashboard-Assets/script_server.js"></script>
     </head>
     <body>
+<!--        <img src="Dashboard-Assets/images/120px-Cog_font_awesome.svg.png" width="50px" height="50px" class="ribbon"/>-->
         <div id="container">
             <div id="menu">
                 <ul>
+                    <li onclick="goHome();"><a>Home</a></li>
                     <li><a data-toggle="modal" data-target="#newrequest-modal">Add New Request</a></li>
                     <li><a data-toggle="modal" data-target="#passwordlist-modal">Add Password List</a></li>
                     <li onclick=""><a>Manage Password Lists</a></li>
@@ -29,7 +31,7 @@
                 </ul>
             </div>
             
-            <h1>Kraken - <span id="kraken-version">0.1.1</span></h1> 
+            <h1>Kraken - <span id="kraken-version">0.9</span></h1> 
             <h3><i>Release the Passwords!</i></h3>    
             
             <div id="content">

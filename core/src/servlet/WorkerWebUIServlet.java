@@ -65,17 +65,18 @@ public class WorkerWebUIServlet extends HttpServlet
 		long time_at_start = KrakenWorker.time_at_start;
 		long cracking_time=0;
 		String time = null;
-		
 		if(time_at_start>0){
 			cracking_time = System.currentTimeMillis()-time_at_start;
-			
-			if (TimeUnit.MILLISECONDS.toMinutes(cracking_time)<60){
-				time = Long.toString(TimeUnit.MILLISECONDS.toMinutes(cracking_time)) + " M";
-			}else if(TimeUnit.MICROSECONDS.toHours(cracking_time)<24){
-				time = Long.toString(TimeUnit.MILLISECONDS.toHours(cracking_time))+" H";
-			}else if (TimeUnit.MILLISECONDS.toDays(cracking_time)<30){
-				time = Long.toString(TimeUnit.MILLISECONDS.toDays(cracking_time)) + " D";
+			System.out.println(cracking_time);
+			if(TimeUnit.MILLISECONDS.toSeconds(cracking_time) < 60){
+				time = Long.toString(TimeUnit.MILLISECONDS.toSeconds(cracking_time))+ " S";
 			}
+			else if(TimeUnit.MILLISECONDS.toMinutes(cracking_time) < 60){
+	    		time = Long.toString(TimeUnit.MILLISECONDS.toMinutes(cracking_time)) + " M";
+	    	}
+	    	else if (TimeUnit.MILLISECONDS.toHours(cracking_time) < 24){
+	    		time = Long.toString(TimeUnit.MILLISECONDS.toHours(cracking_time)) + " H";
+	    	}
 		}else {
 			time = "0 M";
 		}

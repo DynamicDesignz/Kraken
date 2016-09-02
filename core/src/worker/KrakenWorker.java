@@ -76,7 +76,7 @@ public class KrakenWorker implements GearmanFunction{
 			
 			//Time the worker begin to crack
 			time_at_start=System.currentTimeMillis();
-			
+		
 			//Crack
 			LOG.getLogger().info("Cracking....");
 			replyBuilder = crackJob(replyBuilder,job);

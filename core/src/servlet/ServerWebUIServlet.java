@@ -126,6 +126,9 @@ public class ServerWebUIServlet extends HttpServlet
     		resObj.put("Status", r.getStatus());
     		results.add(resObj);
     	}
+    	
+    	returnObject.put("Port", Constants.WebUIPort);
+    	returnObject.put("StartupMode",Constants.StartupMode);
     	returnObject.put("Results",results);
 		return returnObject;
     }

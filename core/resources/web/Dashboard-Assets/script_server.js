@@ -169,3 +169,6 @@ function formSendEvent(){
     });
 }
 
+function goHome(){
+    //Lina Impkement
+}

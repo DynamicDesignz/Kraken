@@ -215,6 +215,11 @@ table.cluster tr.local {
     margin-bottom: 45px;
 }
 
+.ribbon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+}
 #snackbar {
     visibility: hidden;
     min-width: 250px;
