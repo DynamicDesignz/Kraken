@@ -77,7 +77,7 @@ Aircrack-ng 1.1 - (C) 2006, 2007, 2008, 2009 Thomas d'Otreppe
 JobServerIP : 198.162.52.98
 ```
 
-At the end of Step 2, ensure that only one file the folder is named 'config.yml'.
+At the end of Step 2, ensure that only one file in the folder is named 'config.yml'.
 
 *Step 3* : Navigate to folder or terminal (or cmd prompt) and type :
 ```sh
