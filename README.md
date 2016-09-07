@@ -25,54 +25,35 @@ Kraken is organised in the client server architecture where the server acts as t
 To run Kraken you need two dependecies:
 - Java 1.8
 - Aircrack-ng 1.1 or above
-##### ***Java 1.8*** 
-You can download Java 1.8 for your platform from the [Oracle Java Website]. Otherwise:
-###### Linux
-On Ubuntu, you can use the following commands to download the following commands
-```sh
-$ sudo add-apt-repository ppa:webupd8team/java
-$ sudo apt-get update
-$ sudo apt-get install oracle-java8-installer
-```
-###### Windows
-On Windows you need to download and install the Java 1.8 exe file from the link above.
 
-###### Mac
-On Mac, you need to download and install the Java 1.8 dmg file from the link above.
+You can download Java 1.8 for your platform from the [Oracle Java Website]
 
 #### ***Aircrack-ng 1.1 or above***  
-You can download Aircrack-ng from its [download] site.
 ###### Linux
-On Ubuntu, you can use the following commands to download the following commands:
+On Ubuntu, you can use the following commands to download the following commands in terminal:
 ```sh
+$ sudo apt-get update
 $ sudo apt-get install aircrack-ng
 ```
-You may also choose to compile aircrack from source. For this, you should follow the instructions given on Aircrack's installation page.
 ###### Windows
+Aircrack has limited portability on Windows.
 To install aircrack 1.2 on Windows, use its precompiled binary. For this you should:
 - Download the win32 zip
 - Navigate to the /bin/32bit folder containing aircrack-ng-avx.exe.
 - Extract aircrack-ng-avx.exe and all dll files in the directory and place them in the same directory as kraken.jar.
 - Rename aircrack-ng-avx.exe to aircrack-ng.exe
 
+*Note* : This binary was compiled on an AVX enabled windows CPU. We are working to include the non-AVX compiled binary with Kraken in the next release.
+
 ###### Mac
-On Mac, you can install aircrack using the following commands:
+On Mac, you can install aircrack using the following commands in termnial:
 ```sh
+sudo port update
 sudo port install aircrack-ng
 ```
 
-#### ***Gearman Native Server (Optional, only for Linux)***
--Instructions coming soon -
-
 #### Testing
-To test if Kraken will work properly, first run:
-```sh
-java -version
-```
-Your result should include
-```sh
-Java(TM) SE Runtime Environment (build 1.8.0_91-b14)
-```
+To test if Kraken will work properly, first test aircrack by entering the following command:
 Next, test aircrack from the same folder as kraken.jar by typing
 ```sh
 aircrack-ng
@@ -81,44 +62,35 @@ You should see the following on the first line.
 ```sh
 Aircrack-ng 1.1 - (C) 2006, 2007, 2008, 2009 Thomas d'Otreppe
 ```
+*Note* : The exact version may vary but as long as it is above version 1.1, you should be fine.
 
 ### Getting Started
-1. Download this repository's  .zip file and navigate to the Kraken/jar folder.
-2. Run java -jar kraken.jar
-3. This will start an instance of a server and worker client (on the same local machine). A gearman server will be created at port 4730 and a Web UI will be instantiated on port 8080.
+*Step 1* : Download this repository's .zip file and extract it to a folder. 
 
-If you want to use more advanced features, see the configuration section below.
+*Step 2A* : To start kraken as a *Server and Worker*, rename 'server+worker.config.yml' to 'config.yml'.
 
-### Screenshots
-![screenshot](https://github.com/arcaneiceman/Kraken/blob/master/misc/repoimages/kraken-screenshot.png)
+*Step 2B* : To start kraken as only a *Server*, rename 'server.config.yml' to 'config.yml'.
 
-# Configuration
-
-Configuration of Kraken is peformed in the config.yml file. This section explains simple configuration setup to create a cracking cluster.
-
-##### Startup Mode
-Kraken has three running modes: 
-- **Server** : Runs the Kraken Server which all other worker clients connect to. It also creates a web ui running on port 8080. To start kraken in Server Mode ensure that:
-```sh
-StartupMode = Server
+*Step 2C* : To start kraken as only a *Worker*, rename 'worker.config.yml' to 'config.yml' and change the value of <your-server-ip-here> with your server ip. For example:
+```yaml
+#Gearman Server-to-connect-to IP
+JobServerIP : 198.162.52.98
 ```
-in the config.yml.
-- **Worker** : Runs a Kraken Worker Client which receives jobs and cracks passwords. To run kraken in Worker Mode ensure that:
+
+At the end of Step 2, ensure that only one file the folder is named 'config.yml'.
+
+*Step 3* : Navigate to folder or terminal (or cmd prompt) and type :
 ```sh
-StartupMode = Worker
-```
-and specify the IP or hostname of the Kraken Server this Worker is connecting to
-```sh
-GearmanServer = <Your IP/Hostname here>
-```
-- Server+Worker : Runs an instance of both Server and Worker on the local machine.
-Ensure that:
-```sh
-StartupMode = Server+Worker
+java -jar kraken.jar
 ```
 
 ##### PasswordLists
-In Kraken, you can add password lists individually or by folder. Look at config.yml for more details.
+In Kraken, only a single default wpa password list is provided. You can add more lists by downloading them of the internet and adding them through the web ui. We are working to make WPA password lists available. Stay tuned!
+
+### Screenshots
+![screenshot](https://github.com/arcaneiceman/Kraken/blob/master/misc/repoimages/kraken-server-screenshot.png)
+
+![screenshot](https://github.com/arcaneiceman/Kraken/blob/master/misc/repoimages/kraken-worker-screenshot.png)
 
 # Version
 0.1.1
