@@ -18,9 +18,11 @@
     <script src="Dashboard-Assets/script_server.js"></script>
     </head>
     <body>
+<!--        <img src="Dashboard-Assets/images/120px-Cog_font_awesome.svg.png" width="50px" height="50px" class="ribbon"/>-->
         <div id="container">
             <div id="menu">
                 <ul>
+                    <li onclick="goHome();"><a>Home</a></li>
                     <li><a data-toggle="modal" data-target="#newrequest-modal">Add New Request</a></li>
                     <li><a data-toggle="modal" data-target="#passwordlist-modal">Add Password List</a></li>
                     <li onclick=""><a>Manage Password Lists</a></li>
@@ -29,7 +31,7 @@
                 </ul>
             </div>
             
-            <h1>Kraken - <span id="kraken-version">0.1.1</span></h1> 
+            <h1>Kraken - <span id="kraken-version">0.9</span></h1> 
             <h3><i>Release the Passwords!</i></h3>    
             
             <div id="content">
@@ -168,7 +170,7 @@
                       <h4 class="modal-title">Add a Password</h4>
                     </div>
                     <div class="modal-body">
-                        <form role="form" id="passwordlist_add_form" action="serverwebui" method="POST" target="password_form_result">
+                        <form role="form" id="passwordlist_add_form" action="serverwebui" method="POST" target="password_form_result" onsubmit="formSendEvent();">
                             <div class = "form-group box_element">
                                     <label for = "name">Name</label>
                                     <input type = "text" class = "form-control" placeholder = "eg mylist.txt" name="name-passwordlist" required>
@@ -178,7 +180,7 @@
                                     <input type = "text" class = "form-control" placeholder = "eg /home/user/mylist.txt" name="path-passwordlist" required>
                             </div>
                             <div class="form-group box_element"> 
-                                <button type="submit" style="text-align:center;" class="btn btn-default">Submit</button>
+                                <button type="submit" style="text-align:center;" class="btn btn-default kraken-submit">Submit</button>
                             </div>
                         </form>
                         <iframe name="password_form_result" style="display:none" scrolling="no"></iframe>
@@ -200,7 +202,7 @@
                       <h4 class="modal-title">New Request</h4>
                     </div>
                     <div class="modal-body">
-                        <form role= "form" id="nr_request_form" action="serverwebui" method="POST" enctype="multipart/form-data" target="new-request-form-result">
+                        <form role= "form" id="nr_request_form" action="serverwebui" method="POST" enctype="multipart/form-data" target="new-request-form-result" onsubmit="formSendEvent();">
                             <div class = "form-group box_element">
                                 <label for = "name">Target Algorithm:</label>
                                 <select id="nr_algo" style="float:right;margin-right:30%" name="request-type">
@@ -220,13 +222,13 @@
                             <div class="form-group box_element">
                                 <label for = "name">Choose Password Lists from Available Options:</label>
                                 <div id="nr_password_list_container">
-                                    <div class = "checkbox">
+                                    
                                         <!--<label><input type = "checkbox" name="request-plist" value="DarkCode">DarkCode <span> - 75 KB </span></label>-->
-                                    </div>
+                                    
                                 </div>
                             </div>
                             <div class="box_element" style="text-align:center;">
-                                <button type="submit" class="btn btn-default" >Submit</button>
+                                <button type="submit" class="btn btn-default kraken-submit" >Submit</button>
                             </div>
                         </form>
                         <iframe name="new-request-form-result" style="display:none" scrolling="no"></iframe>

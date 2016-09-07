@@ -1,0 +1,73 @@
+#***************************************************************#
+#*                                                             *#
+#*                        General Settings                     *#
+#*                                                             *#
+#***************************************************************#
+
+#Startup Mode
+# Info : This setting will be overridden by the command line. 
+#		If no commandline argument is give, this setting will be used 
+# Options : ServerOnly - Starts Kraken in Server mode
+#           WorkerOnly - Starts Kraken Worker
+#	        ServerAndWorker  - Starts an instance of Kraken Server and Worker 
+StartupMode: ServerAndWorker
+
+#Web User Interface Port
+WebUIPort: 8080
+
+#Temporary Folder Location
+TemporaryFilesFolder: ./kraken-tmp/
+
+#***************************************************************#
+#*                                                             *#
+#*                        Worker Settings                      *#
+#*                                                             *#
+#***************************************************************#
+#Gearman Server-to-connect-to IP
+JobServerIP : 127.0.0.1
+#Gearman Server-to-connect-to Port 
+JobServerPort : 4730
+
+#***************************************************************#
+#*                                                             *#
+#*                        Server Settings                      *#
+#*                                                             *#
+#***************************************************************#
+#Server Port Configuraitons
+# Info : This specifies the ports on which Gearman Server will run on.
+GearmanServerPort: 4730
+
+#***************************************************************#
+#*                                                             *#
+#*                 Advanced Server Settings                    *#
+#*                                                             *#
+#***************************************************************#
+
+#Gearman Server type
+GearmanServerType: Java
+GearmanVersion : "0.6.6"
+GearmanExecuteCommand : ""
+#GearmanServerType: Native
+#GearmanVersion: "OK 1.1.12"
+#GearmanExecuteCommand: "gearmand"
+
+#Hosted Functions
+HostedFunctions : [ WPA/WPA2 ]
+
+#Interval between checking for new Workers in milliseconds
+QueryGearmanWorkersInterval: 2000
+
+#Number of Passwords Per Job
+SizeOfWorkerJob: 5000000
+
+#Number of Gearman Server Invocation Retries
+InvocationAttempts: 3
+
+#Search pattern
+# Info : What type of a Search pattern to use when scanning Lists
+# Options : Optimize : For small files, random chunks will be searched.
+#            for large files, chunks will be searched linearly.
+#     Linear : All files are searched linearly. Faster for large files.
+#           Random : All files are searched randomly. Slow for large files.
+SearchPattern: Optimize
+

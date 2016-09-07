@@ -58,7 +58,7 @@ HostedFunctions : [ WPA/WPA2 ]
 QueryGearmanWorkersInterval: 2000
 
 #Number of Passwords Per Job
-SizeOfWorkerJob: 100000
+SizeOfWorkerJob: 5000000
 
 #Number of Gearman Server Invocation Retries
 InvocationAttempts: 3
