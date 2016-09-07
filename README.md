@@ -23,10 +23,10 @@ Kraken is organised in the client server architecture where the server acts as t
 ### Dependencies
 
 To run Kraken you need two dependecies:
-- Java 1.8
+- Java JRE 8 and above
 - Aircrack-ng 1.1 or above
 
-You can download Java 1.8 for your platform from the [Oracle Java Website]
+You can download Java JRE 8 for your platform from the [Oracle Java Website]
 
 #### ***Aircrack-ng 1.1 or above***  
 ###### Linux
