@@ -74,7 +74,7 @@ Aircrack-ng 1.1 - (C) 2006, 2007, 2008, 2009 Thomas d'Otreppe
 *Step 2C* : To start kraken as only a *Worker*, rename 'worker.config.yml' to 'config.yml' and change the value of <your-server-ip-here> with your server ip. For example:
 ```yaml
 #Gearman Server-to-connect-to IP
-JobServerIP : 198.162.52.98
+JobServerIP : 192.168.1.2
 ```
 
 At the end of Step 2, ensure that only one file in the folder is named 'config.yml'.
