@@ -65,7 +65,7 @@ Aircrack-ng 1.1 - (C) 2006, 2007, 2008, 2009 Thomas d'Otreppe
 *Note* : The exact version may vary but as long as it is above version 1.1, you should be fine.
 
 ### Getting Started
-*Step 1* : Download this repository's .zip file and extract it to a folder. 
+*Step 1* : Download this repository's ![zip](https://github.com/arcaneiceman/Kraken/releases/download/0.9/kraken.zip) file and extract it to a folder. 
 
 *Step 2A* : To start kraken as a *Server and Worker*, rename 'server+worker.config.yml' to 'config.yml'.
 
