@@ -1,0 +1,46 @@
+buildscript {
+	ext {
+		springBootVersion = '1.5.7.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+	}
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
+
+group = 'com.wali'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+
+repositories {
+	mavenCentral()
+}
+
+
+dependencies {
+	compile('org.springframework.boot:spring-boot-starter')
+
+    // Spring Web
+    compile("org.springframework.boot:spring-boot-starter-web")
+
+    // Spring JPA
+    compile 'org.springframework.data:spring-data-jpa'
+
+    // H2
+    compile("com.h2database:h2")
+
+	// Guava
+	compile group: 'com.google.guava', name: 'guava', version: '23.0'
+
+    // Hibernate
+    compile 'org.hibernate:hibernate-core:5.2.11.Final'
+
+	compileOnly('org.projectlombok:lombok')
+	testCompile('org.springframework.boot:spring-boot-starter-test')
+}
