@@ -1,8 +1,8 @@
 package com.wali.kraken.controllers;
 
 import com.wali.kraken.domain.PasswordRequest;
-import com.wali.kraken.repositories.CompletedPasswordRequestsRepository;
-import com.wali.kraken.repositories.PendingPasswordRequestsRepository;
+import com.wali.kraken.repositories.passwordrequests.CompletedPasswordRequestsRepository;
+import com.wali.kraken.repositories.passwordrequests.PendingPasswordRequestsRepository;
 import com.wali.kraken.services.ServiceFunctions;
 import com.wali.kraken.utils.Exceptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
-import java.util.UUID;
 
 @RestController("/password-request")
 public class PasswordRequestController {
@@ -32,6 +31,13 @@ public class PasswordRequestController {
         this.serviceFunctions = serviceFunctions;
         this.pendingPasswordRequestsRepository = pendingPasswordRequestsRepository;
         this.completedPasswordRequestsRepository = completedPasswordRequestsRepository;
+
+        pendingPasswordRequestsRepository.save(
+                new PasswordRequest(null,
+                        "wali",
+                        "walipash",
+                        "passlist1:passlist2",
+                        null));
     }
 
     // Create Password Request
@@ -52,7 +58,7 @@ public class PasswordRequestController {
 
         // Create Password Request Object
         PasswordRequest passwordRequest = new PasswordRequest(
-                UUID.randomUUID(),
+                null,
                 ssid,
                 Base64.getEncoder().encodeToString(passwordCaptureFileBytes),
                 String.join(":", passwordLists),
@@ -69,15 +75,16 @@ public class PasswordRequestController {
 
     // Delete a Password Request
     @DeleteMapping
-    public ResponseEntity<PasswordRequest> deletePasswordRequest(@RequestParam String id){
-        PasswordRequest p = pendingPasswordRequestsRepository.findOne(id);
-        if (p != null)
-            return new ResponseEntity<>(p, new HttpHeaders(), HttpStatus.OK);
-        // else if ( jobmanger.getcurrentRequest().getId() == id)
-        // clear request;
-        // TODO : fill the above
-        else
-            throw new Exceptions.PasswordRequestNotFound();
+    public ResponseEntity<PasswordRequest> deletePasswordRequest(@RequestParam Long id){
+//        PasswordRequest p = pendingPasswordRequestsRepository.findOne(id);
+//        if (p != null)
+//            return new ResponseEntity<>(p, new HttpHeaders(), HttpStatus.OK);
+//        // else if ( jobmanger.getcurrentRequest().getId() == id)
+//        // clear request;
+//        // TODO : fill the above
+//        else
+//            throw new Exceptions.PasswordRequestNotFound();
+        return null;
     }
 
     @RequestMapping(value = "/get-pending-password-requests", method = RequestMethod.GET,

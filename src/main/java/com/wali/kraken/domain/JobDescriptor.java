@@ -1,19 +1,38 @@
 package com.wali.kraken.domain;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.UUID;
+import javax.persistence.*;
 
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Entity
 public class JobDescriptor {
 
-    public UUID ID;
+    @Id
+    @Column
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long queueNumber;
 
-    public String requestID;
+    @ManyToOne
+    @JoinColumn(name = "request_queue_number")
+    private PasswordRequest passwordRequest;
 
-    public long start;
+    @ManyToOne
+    @JoinColumn(name = "password_list_queue_number")
+    private PasswordListDescriptor passwordListDescriptor;
 
+    @Column
+    public long startLine;
+
+    @Column
     public long end;
 
+    @Column
     public long timeRunning;
 }

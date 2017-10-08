@@ -12,23 +12,18 @@ import javax.persistence.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class PasswordRequest {
+public class PasswordListDescriptor {
 
     @Id
     @Column
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long queueNumber;
 
-    @Column
-    private String SSIDToFind;
+    @ManyToOne
+    @JoinColumn(name = "request_queue_number")
+    private PasswordRequest passwordRequest;
 
     @Column
-    private String passwordCaptureInBase64;
-
-    @Column
-    private String colonDelimitedPasswordListNames;
-
-    @Column
-    private String result;
+    private String listName;
 
 }
