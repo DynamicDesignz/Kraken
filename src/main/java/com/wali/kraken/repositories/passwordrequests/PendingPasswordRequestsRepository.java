@@ -9,6 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 public interface PendingPasswordRequestsRepository
         extends JpaRepository<PasswordRequest, Long> {
 
-    @Query("SELECT pr FROM PasswordRequest LIMIT 1")
+    @Query("SELECT pr FROM PasswordRequest pr")
     Page<PasswordRequest> getFirstPasswordRequest(Pageable page);
 }

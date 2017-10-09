@@ -1,18 +1,17 @@
 package com.wali.kraken.core;
 
-import com.wali.kraken.core.concurrency.wrappers.PendingJobDescriptorRepositoryConcurrencyWrapper;
-import com.wali.kraken.core.concurrency.wrappers.PendingPasswordListDescriptorRepositoryConcurrencyWrapper;
-import com.wali.kraken.core.concurrency.wrappers.PendingPasswordRequestRepositoryConcurrencyWrapper;
+import com.wali.kraken.core.concurrency.wrappers.*;
 import com.wali.kraken.domain.JobDescriptor;
 import com.wali.kraken.domain.PasswordListDescriptor;
 import com.wali.kraken.domain.PasswordRequest;
 import com.wali.kraken.repositories.jobdescriptors.CompletedJobDescriptorRepository;
-import com.wali.kraken.repositories.jobdescriptors.RunningJobDescriptorRepository;
 import com.wali.kraken.repositories.passwordlistdescriptors.CompletedPasswordListDescriptorRepository;
-import com.wali.kraken.repositories.passwordlistdescriptors.RunningPasswordListDescriptorRepository;
 import com.wali.kraken.repositories.passwordrequests.CompletedPasswordRequestsRepository;
-import com.wali.kraken.repositories.passwordrequests.RunningPasswordRequestsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,29 +19,33 @@ public class ProcessingCore {
 
     private int MAX_CONCURRENT_PASSWORD_REQUESTS;
     private int MAX_CONCURRENT_PASSWORD_LISTS;
+    private int JobNumberCount;
 
     private PendingJobDescriptorRepositoryConcurrencyWrapper pendingJobs;
-    private RunningJobDescriptorRepository runningJobs;
+    private RunningJobDescriptorRepositoryConcurrencyWrapper runningJobs;
     private CompletedJobDescriptorRepository completedJobs;
 
     private PendingPasswordListDescriptorRepositoryConcurrencyWrapper pendingPasswordLists;
-    private RunningPasswordListDescriptorRepository runningPasswordLists;
+    private RunningPasswordListDescriptorRepositoryConcurrencyWrapper runningPasswordLists;
     private CompletedPasswordListDescriptorRepository completedPasswordLists;
 
     private PendingPasswordRequestRepositoryConcurrencyWrapper pendingRequests;
-    private RunningPasswordRequestsRepository runningRequests;
+    private RunningPasswordRequestRepositoryConcurrencyWrapper runningRequests;
     private CompletedPasswordRequestsRepository completedRequests;
 
+    private Logger log = LoggerFactory.getLogger(ProcessingCore.class);
+
+    @Autowired
     public ProcessingCore(
             Environment environment,
             PendingJobDescriptorRepositoryConcurrencyWrapper pendingJobs,
-            RunningJobDescriptorRepository runningJobs,
+            RunningJobDescriptorRepositoryConcurrencyWrapper runningJobs,
             CompletedJobDescriptorRepository completedJobs,
             PendingPasswordListDescriptorRepositoryConcurrencyWrapper pendingPasswordLists,
-            RunningPasswordListDescriptorRepository runningPasswordLists,
+            RunningPasswordListDescriptorRepositoryConcurrencyWrapper runningPasswordLists,
             CompletedPasswordListDescriptorRepository completedPasswordLists,
             PendingPasswordRequestRepositoryConcurrencyWrapper pendingRequests,
-            RunningPasswordRequestsRepository runningRequests,
+            RunningPasswordRequestRepositoryConcurrencyWrapper runningRequests,
             CompletedPasswordRequestsRepository completedRequests) {
         this.pendingJobs = pendingJobs;
         this.runningJobs = runningJobs;
@@ -56,9 +59,9 @@ public class ProcessingCore {
         this.runningRequests = runningRequests;
         this.completedRequests = completedRequests;
 
-        MAX_CONCURRENT_PASSWORD_REQUESTS = Integer.getInteger(
+        MAX_CONCURRENT_PASSWORD_REQUESTS = Integer.parseInt(
                 environment.getProperty("kraken.concurrent.passwordrequests", "1"));
-        MAX_CONCURRENT_PASSWORD_LISTS = Integer.getInteger(
+        MAX_CONCURRENT_PASSWORD_LISTS = Integer.parseInt(
                 environment.getProperty("kraken.concurrent.passwordlists", "1"));
     }
 
@@ -69,7 +72,7 @@ public class ProcessingCore {
      * are handled by this function.
      *
      * Flow:
-     *      Part 1:
+     *      Section 1:
      *
      *
      *
@@ -77,17 +80,94 @@ public class ProcessingCore {
      * @param passwordListDescriptorQueueNumber {@link PasswordListDescriptor#queueNumber}
      * @param jobDescriptorQueueNumber {@link JobDescriptor#queueNumber}
      */
+    @Async
     public synchronized void process(Long requestQueueNumber,
                                      Long passwordListDescriptorQueueNumber,
                                      Long jobDescriptorQueueNumber){
-        // Jobs
-//        if(pendingJobs.getCount() == 0){
-//
-//        }
+        // Section 1 : Jobs
 
+        // Marking Jobs as Complete
+        if(jobDescriptorQueueNumber != null){
+            JobDescriptor jobDescriptor = runningJobs.getOne(jobDescriptorQueueNumber);
+            if(jobDescriptor != null)
+                markJobAsComplete(jobDescriptor);
+            else{
+                log.error("Needed to mark Job with id {} as complete but it was not found" +
+                        "in the runningJobDescriptorRepository", jobDescriptorQueueNumber);
+            }
+        }
+
+        // Marking PasswordLists as Complete
+        if(requestQueueNumber != null && passwordListDescriptorQueueNumber != null &&
+                pendingJobs.getCount(requestQueueNumber, passwordListDescriptorQueueNumber) == 0 &&
+                runningJobs.getCount(requestQueueNumber, passwordListDescriptorQueueNumber) == 0) {
+
+            PasswordListDescriptor passwordListDescriptor =
+                    runningPasswordLists.getOne(passwordListDescriptorQueueNumber);
+            if (passwordListDescriptor != null)
+                markPasswordListAsComplete(passwordListDescriptor);
+            else
+                log.error("Needed to mark PasswordListDescriptor with id {} as complete " +
+                                "but it was not found in the runningPasswordListRepository",
+                        passwordListDescriptorQueueNumber);
+        }
+
+        // Sending New Jobs
+        if(runningJobs.getCount() < JobNumberCount && pendingJobs.getCount() > 0){
+            processNextJob();
+            return;
+        }
+
+        // Section 2 : PasswordList
+
+        // Marking Requests as Complete
+        if(requestQueueNumber != null &&
+                pendingPasswordLists.getCount(requestQueueNumber) == 0 &&
+                runningPasswordLists.getCount(requestQueueNumber) == 0){
+
+            PasswordRequest passwordRequest = runningRequests.getOne(requestQueueNumber);
+            if(passwordRequest != null)
+                markRequestAsComplete(passwordRequest);
+            else
+                log.error("Needed to mark PasswordRequest with id {} as complete" +
+                        "but it was not found in the runningPasswordRequestRepository",
+                        requestQueueNumber);
+
+        }
+
+        // Sending New PasswordLists
+        if (runningPasswordLists.getCount() < MAX_CONCURRENT_PASSWORD_LISTS &&
+                pendingPasswordLists.getCount() > 0){
+            processNextPasswordList();
+            return;
+        }
+
+        // Section 3 : Requests
+
+        // Sending New PasswordRequests
+        if (runningRequests.getCount() < MAX_CONCURRENT_PASSWORD_REQUESTS &&
+                pendingRequests.getCount() > 0){
+            processNextRequest();
+            return;
+        }
+    }
+
+    public void processNextRequest(PasswordRequest passwordRequest){
 
     }
 
+    public void processNextPasswordList(PasswordListDescriptor passwordListDescriptor){};
+
+    public void processNextJob(JobDescriptor jobDescriptor){};
+
+    public void markJobAsComplete(JobDescriptor jobDescriptor){};
+
+    public void recoverJob(JobDescriptor jobDescriptor){};
+
+    public void markRequestAsComplete(PasswordRequest passwordRequest){};
+
+    public void markPasswordListAsComplete(PasswordListDescriptor passwordListDescriptor){
+    };
 
 }
 

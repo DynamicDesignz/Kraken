@@ -87,14 +87,12 @@ public class PasswordRequestController {
         return null;
     }
 
-    @RequestMapping(value = "/get-pending-password-requests", method = RequestMethod.GET,
-    produces = {MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/get-pending-password-requests", produces = {MediaType.APPLICATION_JSON_VALUE})
     public List<PasswordRequest> getPendingPasswordRequests(){
         return pendingPasswordRequestsRepository.findAll();
     }
 
-    @RequestMapping(value = "/get-completed-password-requests", method = RequestMethod.GET,
-            produces = {MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/get-completed-password-requests", produces = {MediaType.APPLICATION_JSON_VALUE})
     public List<PasswordRequest> getCompletedPasswordRequests(){
         return completedPasswordRequestsRepository.findAll();
     }
