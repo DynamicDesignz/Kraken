@@ -41,6 +41,9 @@ dependencies {
     // Hibernate
     compile 'org.hibernate:hibernate-core:5.2.11.Final'
 
+	// Gearman
+	compile files ('dependencies/jar/java-gearman-service-0.6.6.jar')
+
 	compileOnly('org.projectlombok:lombok')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 }

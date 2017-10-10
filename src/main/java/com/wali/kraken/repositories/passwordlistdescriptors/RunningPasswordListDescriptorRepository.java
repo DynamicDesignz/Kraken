@@ -9,5 +9,5 @@ public interface RunningPasswordListDescriptorRepository
 
     @Query("SELECT COUNT(pld) FROM PasswordListDescriptor pld " +
             "WHERE pld.passwordRequest.queueNumber = ?1")
-    long getCountOfPasswordListDescriptorForRequest(long requestQueueNumber);
+    long getCount(long requestQueueNumber);
 }

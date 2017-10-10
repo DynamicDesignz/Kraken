@@ -5,17 +5,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 public interface PendingPasswordListDescriptorRepository
         extends JpaRepository<PasswordListDescriptor, Long> {
 
-    @Query("SELECT pld FROM PasswordListDescriptor pld " +
-            "WHERE pld.passwordRequest.queueNumber = ?1")
-    Page<PasswordListDescriptor> getFirstPasswordListDescriptorForRequest(
-            @Param("rqn") long requestQueueNumber, Pageable page);
+    @Query("SELECT pld FROM PasswordListDescriptor pld")
+    Page<PasswordListDescriptor> get(Pageable page);
 
     @Query("SELECT COUNT(pld) FROM PasswordListDescriptor pld " +
             "WHERE pld.passwordRequest.queueNumber = ?1")
-    long getCountOfPasswordListDescriptorForRequest(long requestQueueNumber);
+    long getCount(long requestQueueNumber);
 }

@@ -10,5 +10,5 @@ public interface PendingPasswordRequestsRepository
         extends JpaRepository<PasswordRequest, Long> {
 
     @Query("SELECT pr FROM PasswordRequest pr")
-    Page<PasswordRequest> getFirstPasswordRequest(Pageable page);
+    Page<PasswordRequest> get(Pageable page);
 }
