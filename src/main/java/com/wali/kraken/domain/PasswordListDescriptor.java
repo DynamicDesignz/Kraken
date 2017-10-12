@@ -24,6 +24,6 @@ public class PasswordListDescriptor {
     private PasswordRequest passwordRequest;
 
     @Column
-    private String listName;
+    private String listPath;
 
 }

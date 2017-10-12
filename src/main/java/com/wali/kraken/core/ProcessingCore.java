@@ -1,8 +1,10 @@
 package com.wali.kraken.core;
 
 import com.wali.kraken.domain.JobDescriptor;
+import com.wali.kraken.domain.PasswordList;
 import com.wali.kraken.domain.PasswordListDescriptor;
 import com.wali.kraken.domain.PasswordRequest;
+import com.wali.kraken.repositories.PasswordListRepository;
 import com.wali.kraken.repositories.jobdescriptors.CompletedJobDescriptorRepository;
 import com.wali.kraken.repositories.jobdescriptors.PendingJobDescriptorRepository;
 import com.wali.kraken.repositories.jobdescriptors.RunningJobDescriptorRepository;
@@ -10,6 +12,7 @@ import com.wali.kraken.repositories.passwordlistdescriptors.CompletedPasswordLis
 import com.wali.kraken.repositories.passwordlistdescriptors.PendingPasswordListDescriptorRepository;
 import com.wali.kraken.repositories.passwordlistdescriptors.RunningPasswordListDescriptorRepository;
 import com.wali.kraken.repositories.passwordrequests.CompletedPasswordRequestsRepository;
+import com.wali.kraken.repositories.passwordrequests.ErrorPasswordRequestRepository;
 import com.wali.kraken.repositories.passwordrequests.PendingPasswordRequestsRepository;
 import com.wali.kraken.repositories.passwordrequests.RunningPasswordRequestsRepository;
 import org.gearman.Gearman;
@@ -44,6 +47,9 @@ public class ProcessingCore {
     private PendingPasswordRequestsRepository pendingRequests;
     private RunningPasswordRequestsRepository runningRequests;
     private CompletedPasswordRequestsRepository completedRequests;
+    private ErrorPasswordRequestRepository errorRequests;
+
+    private PasswordListRepository passwordListRepository;
 
     private Logger log = LoggerFactory.getLogger(ProcessingCore.class);
     private ExecutorService executorService;
@@ -52,9 +58,11 @@ public class ProcessingCore {
     @Autowired
     public ProcessingCore(
             Environment environment,
+            PasswordListRepository passwordListRepository,
             PendingJobDescriptorRepository pendingJobs,
             RunningJobDescriptorRepository runningJobs,
             CompletedJobDescriptorRepository completedJobs,
+            ErrorPasswordRequestRepository errorPasswordRequestRepository,
             PendingPasswordListDescriptorRepository pendingPasswordLists,
             RunningPasswordListDescriptorRepository runningPasswordLists,
             CompletedPasswordListDescriptorRepository completedPasswordLists,
@@ -72,6 +80,9 @@ public class ProcessingCore {
         this.pendingRequests = pendingRequests;
         this.runningRequests = runningRequests;
         this.completedRequests = completedRequests;
+        this.errorRequests = errorPasswordRequestRepository;
+
+        this.passwordListRepository = passwordListRepository;
 
         MAX_CONCURRENT_PASSWORD_REQUESTS = Integer.parseInt(
                 environment.getProperty("kraken.concurrent.passwordrequests", "1"));
@@ -155,6 +166,10 @@ public class ProcessingCore {
                 pendingRequests.count() > 0){
 
             PasswordRequest passwordRequest = processNextRequest();
+
+            // If null, there was a processing error.
+            if(passwordRequest == null)
+                return;
             // Async Recursive Dispatch
             executorService.execute(() -> process(
                     passwordRequest.getQueueNumber(),
@@ -176,7 +191,22 @@ public class ProcessingCore {
             pendingRequests.delete(passwordRequest);
         }
         // Create Password List entries
-
+        String[] passwordLists = passwordRequest.getColonDelimitedPasswordListNames().split(":");
+        for(String passwordListName : passwordLists){
+            PasswordList passwordList = passwordListRepository.findBylistName(passwordListName);
+            if(passwordList == null){
+                log.error("Failed to find list with name {}. Throwing in error repo!", passwordListName);
+                errorRequests.save(passwordRequest);
+                return null;
+            }
+            else{
+                log.info("Added Password List with name {} as a descriptor for request number {}",
+                        passwordListName, passwordRequest.getQueueNumber());
+                pendingPasswordLists.save(new PasswordListDescriptor(null,
+                        passwordRequest,
+                        passwordList.getListPath()));
+            }
+        }
         log.info("Success! PasswordRequest {} added to running queue", passwordRequest);
         return passwordRequest;
     }
