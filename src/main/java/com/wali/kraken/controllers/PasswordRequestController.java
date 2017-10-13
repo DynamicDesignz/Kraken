@@ -1,9 +1,9 @@
 package com.wali.kraken.controllers;
 
 import com.wali.kraken.core.ProcessingCore;
-import com.wali.kraken.domain.PasswordRequest;
-import com.wali.kraken.repositories.passwordrequests.CompletedPasswordRequestsRepository;
-import com.wali.kraken.repositories.passwordrequests.PendingPasswordRequestsRepository;
+import com.wali.kraken.domain.core.PasswordRequest;
+import com.wali.kraken.enumerations.ProcessingStatus;
+import com.wali.kraken.repositories.PasswordRequestRepository;
 import com.wali.kraken.services.ServiceFunctions;
 import com.wali.kraken.utils.Exceptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,19 +26,16 @@ public class PasswordRequestController {
     private ExecutorService executorService;
     private ProcessingCore processingCore;
     private ServiceFunctions serviceFunctions;
-    private PendingPasswordRequestsRepository pendingPasswordRequestsRepository;
-    private CompletedPasswordRequestsRepository completedPasswordRequestsRepository;
+    private PasswordRequestRepository passwordRequestRepository;
 
     @Autowired
     public PasswordRequestController(ServiceFunctions serviceFunctions,
                                      ProcessingCore processingCore,
-                                     PendingPasswordRequestsRepository pendingPasswordRequestsRepository,
-                                     CompletedPasswordRequestsRepository completedPasswordRequestsRepository){
+                                     PasswordRequestRepository passwordRequestRepository){
         this.serviceFunctions = serviceFunctions;
-        this.pendingPasswordRequestsRepository = pendingPasswordRequestsRepository;
-        this.completedPasswordRequestsRepository = completedPasswordRequestsRepository;
         this.processingCore = processingCore;
         this.executorService = Executors.newSingleThreadExecutor();
+        this.passwordRequestRepository = passwordRequestRepository;
     }
 
     // Create Password Request
@@ -60,13 +57,14 @@ public class PasswordRequestController {
         // Create Password Request Object
         PasswordRequest passwordRequest = new PasswordRequest(
                 null,
+                ProcessingStatus.PENDING,
                 ssid,
                 Base64.getEncoder().encodeToString(passwordCaptureFileBytes),
                 String.join(":", passwordLists),
                 null);
 
         // Add them to repository
-        pendingPasswordRequestsRepository.save(passwordRequest);
+        passwordRequestRepository.save(passwordRequest);
 
         // Submit and call processing core on another thread
         executorService.submit(() -> processingCore.process(null,
@@ -93,18 +91,19 @@ public class PasswordRequestController {
 
     @GetMapping(value = "/get-pending-password-requests", produces = {MediaType.APPLICATION_JSON_VALUE})
     public List<PasswordRequest> getPendingPasswordRequests(){
-        return pendingPasswordRequestsRepository.findAll();
+        return passwordRequestRepository.getAllPending();
     }
 
     @GetMapping(value = "/get-completed-password-requests", produces = {MediaType.APPLICATION_JSON_VALUE})
     public List<PasswordRequest> getCompletedPasswordRequests(){
-        return completedPasswordRequestsRepository.findAll();
+        return passwordRequestRepository.getAllCompleted();
     }
 
     @GetMapping(value = "/test")
     public void test(){
-        pendingPasswordRequestsRepository.save(
+        passwordRequestRepository.save(
                 new PasswordRequest(null,
+                        ProcessingStatus.PENDING,
                         "wali",
                         "walipash",
                         "default_list.txt",

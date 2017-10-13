@@ -18,8 +18,8 @@ public class PasswordListController {
         this.passwordListRepository = passwordListRepository;
     }
 
-    @GetMapping
-    public List<PasswordList> getAll(){
-        return passwordListRepository.findAll();
-    }
+//    @GetMapping
+//    public List<PasswordList> getAll(){
+//        return passwordListRepository.findAll();
+//    }
 }

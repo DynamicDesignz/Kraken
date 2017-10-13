@@ -1,5 +1,6 @@
-package com.wali.kraken.domain;
+package com.wali.kraken.domain.core;
 
+import com.wali.kraken.enumerations.ProcessingStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,9 @@ public class PasswordRequest {
     @Column
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long queueNumber;
+
+    @Column
+    private String processingStatus;
 
     @Column
     private String SSIDToFind;

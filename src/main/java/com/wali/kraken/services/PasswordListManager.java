@@ -18,6 +18,7 @@ public class PasswordListManager {
         // Load default list
         ClassLoader classLoader = this.getClass().getClassLoader();
         String path = classLoader.getResource("passwordlists/default_list.txt").getPath();
+        path = path.replaceFirst("^/(.:/)", "$1");
         PasswordList defaultPasswordList = new PasswordList(path);
         passwordListRepository.save(defaultPasswordList);
     }

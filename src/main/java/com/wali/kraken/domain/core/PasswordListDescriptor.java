@@ -1,5 +1,7 @@
-package com.wali.kraken.domain;
+package com.wali.kraken.domain.core;
 
+import com.wali.kraken.domain.PasswordList;
+import com.wali.kraken.enumerations.ProcessingStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,11 +21,15 @@ public class PasswordListDescriptor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long queueNumber;
 
+    @Column
+    private ProcessingStatus processingStatus;
+
     @ManyToOne
     @JoinColumn(name = "request_queue_number")
     private PasswordRequest passwordRequest;
 
-    @Column
-    private String listPath;
+    @ManyToOne
+    @JoinColumn(name = "password_list")
+    private PasswordList passwordList;
 
 }

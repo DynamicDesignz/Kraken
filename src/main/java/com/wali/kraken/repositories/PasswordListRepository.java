@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.Query;
 public interface PasswordListRepository extends JpaRepository<PasswordList, String> {
 
     @Query("SELECT pl FROM PasswordList pl WHERE pl.listName = ?1")
-    PasswordList findBylistName(String listName);
+    PasswordList findByListName(String listName);
 }

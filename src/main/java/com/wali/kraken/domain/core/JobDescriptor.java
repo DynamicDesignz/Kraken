@@ -1,5 +1,7 @@
-package com.wali.kraken.domain;
+package com.wali.kraken.domain.core;
 
+import com.wali.kraken.domain.PasswordList;
+import com.wali.kraken.enumerations.ProcessingStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +21,9 @@ public class JobDescriptor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long queueNumber;
 
+    @Column
+    private ProcessingStatus processingStatus;
+
     @ManyToOne
     @JoinColumn(name = "request_queue_number")
     private PasswordRequest passwordRequest;
@@ -26,6 +31,10 @@ public class JobDescriptor {
     @ManyToOne
     @JoinColumn(name = "password_list_queue_number")
     private PasswordListDescriptor passwordListDescriptor;
+
+    @ManyToOne
+    @JoinColumn(name = "password_list")
+    private PasswordList passwordList;
 
     @Column
     public long startLine;
