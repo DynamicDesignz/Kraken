@@ -29,6 +29,6 @@ public interface JobDescriptorRepository extends JpaRepository<JobDescriptor, Lo
     @Query("SELECT COUNT(jd) FROM JobDescriptor jd WHERE jd.processingStatus = 'RUNNING'")
     long getRunningCount();
 
-    @Query("SELECT jd FROM JobDescriptor jd WHERE jd.processingStatus = 'RUNNING'")
+    @Query("SELECT jd FROM JobDescriptor jd WHERE jd.processingStatus = 'PENDING'")
     Page<JobDescriptor> getFirstAvailableJob(Pageable page);
 }

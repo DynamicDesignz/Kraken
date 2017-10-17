@@ -1,16 +1,16 @@
 package com.wali.kraken.core;
 
 import com.wali.kraken.core.filereaders.LinearPasswordReader;
+import com.wali.kraken.domain.CandidateValueList;
+import com.wali.kraken.domain.core.CanditateValueListDescriptor;
+import com.wali.kraken.domain.core.CrackRequest;
 import com.wali.kraken.domain.core.JobDescriptor;
-import com.wali.kraken.domain.PasswordList;
-import com.wali.kraken.domain.core.PasswordListDescriptor;
-import com.wali.kraken.domain.core.PasswordRequest;
 import com.wali.kraken.domain.overwire.Job;
 import com.wali.kraken.enumerations.ProcessingStatus;
+import com.wali.kraken.repositories.CandidateValueListDescriptorRepository;
+import com.wali.kraken.repositories.CandidateValueListRepository;
+import com.wali.kraken.repositories.CrackRequestRepository;
 import com.wali.kraken.repositories.JobDescriptorRepository;
-import com.wali.kraken.repositories.PasswordListDescriptorRepository;
-import com.wali.kraken.repositories.PasswordListRepository;
-import com.wali.kraken.repositories.PasswordRequestRepository;
 import org.gearman.Gearman;
 import org.gearman.GearmanClient;
 import org.gearman.GearmanServer;
@@ -23,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,10 +37,10 @@ public class ProcessingCore {
     private long JOB_SIZE;
 
     private JobDescriptorRepository jobDescriptorRepository;
-    private PasswordListDescriptorRepository passwordListDescriptorRepository;
-    private PasswordRequestRepository passwordRequestRepository;
+    private CandidateValueListDescriptorRepository candidateValueListDescriptorRepository;
+    private CrackRequestRepository crackRequestRepository;
 
-    private PasswordListRepository passwordListRepository;
+    private CandidateValueListRepository candidateValueListRepository;
 
     private LinearPasswordReader linearPasswordReader;
 
@@ -51,17 +52,17 @@ public class ProcessingCore {
     public ProcessingCore(
             Environment environment,
             LinearPasswordReader linearPasswordReader,
-            PasswordListRepository passwordListRepository,
+            CandidateValueListRepository candidateValueListRepository,
             JobDescriptorRepository jobDescriptorRepository,
-            PasswordListDescriptorRepository passwordListDescriptorRepository,
-            PasswordRequestRepository passwordRequestRepository) {
+            CandidateValueListDescriptorRepository candidateValueListDescriptorRepository,
+            CrackRequestRepository crackRequestRepository) {
         this.linearPasswordReader = linearPasswordReader;
 
         this.jobDescriptorRepository = jobDescriptorRepository;
-        this.passwordListDescriptorRepository = passwordListDescriptorRepository;
-        this.passwordRequestRepository = passwordRequestRepository;
+        this.candidateValueListDescriptorRepository = candidateValueListDescriptorRepository;
+        this.crackRequestRepository = crackRequestRepository;
 
-        this.passwordListRepository = passwordListRepository;
+        this.candidateValueListRepository = candidateValueListRepository;
 
         MAX_CONCURRENT_PASSWORD_REQUESTS = Integer.parseInt(
                 environment.getProperty("kraken.concurrent.passwordrequests", "1"));
@@ -84,42 +85,40 @@ public class ProcessingCore {
 
     /**
      * Primary Core Function of Kraken
-     *
+     * <p>
      * All callbacks and password request initiations, and jobs submitted to Gearman
      * are handled by this function.
-     *
+     * <p>
      * Flow:
-     *      Section 1:
+     * Section 1:
      *
-     *
-     *
-     * @param requestQueueNumber {@link PasswordRequest#queueNumber}
-     * @param passwordListDescriptorQueueNumber {@link PasswordListDescriptor#queueNumber}
-     * @param jobDescriptorQueueNumber {@link JobDescriptor#queueNumber}
+     * @param requestQueueNumber                {@link CrackRequest#queueNumber}
+     * @param passwordListDescriptorQueueNumber {@link CanditateValueListDescriptor#queueNumber}
+     * @param jobDescriptorQueueNumber          {@link JobDescriptor#queueNumber}
      */
     public synchronized void process(Long requestQueueNumber,
                                      Long passwordListDescriptorQueueNumber,
-                                     Long jobDescriptorQueueNumber){
+                                     Long jobDescriptorQueueNumber) {
         // Section 1 : Jobs
 
         // Marking Jobs as Complete
-        if(jobDescriptorQueueNumber != null)
+        if (jobDescriptorQueueNumber != null)
             markJobAsComplete(jobDescriptorQueueNumber);
 
         // Marking PasswordLists as Complete
-        if(requestQueueNumber != null && passwordListDescriptorQueueNumber != null &&
+        if (requestQueueNumber != null && passwordListDescriptorQueueNumber != null &&
                 jobDescriptorRepository.getPendingCountFor(requestQueueNumber, passwordListDescriptorQueueNumber) == 0 &&
                 jobDescriptorRepository.getRunningCountFor(requestQueueNumber, passwordListDescriptorQueueNumber) == 0)
             markPasswordListAsComplete(passwordListDescriptorQueueNumber);
 
         // Sending New Jobs
-        if(requestQueueNumber != null && passwordListDescriptorQueueNumber != null &&
+        if (requestQueueNumber != null && passwordListDescriptorQueueNumber != null &&
                 jobDescriptorRepository.getRunningCount() < MAXJobNumberCount &&
-                jobDescriptorRepository.getPendingCount() > 0){
+                jobDescriptorRepository.getPendingCount() > 0) {
             JobDescriptor jobDescriptor = processNextJob();
 
             // If failed, call again to get next job
-            if(jobDescriptor == null)
+            if (jobDescriptor == null)
                 // Async Recursive Dispatch
                 executorService.execute(() -> process(
                         requestQueueNumber,
@@ -131,21 +130,21 @@ public class ProcessingCore {
         // Section 2 : PasswordList
 
         // Marking Requests as Complete
-        if(requestQueueNumber != null &&
-                passwordListDescriptorRepository.getPendingCountFor(requestQueueNumber) == 0 &&
-                passwordListDescriptorRepository.getRunningCountFor(requestQueueNumber) == 0)
+        if (requestQueueNumber != null &&
+                candidateValueListDescriptorRepository.getPendingCountFor(requestQueueNumber) == 0 &&
+                candidateValueListDescriptorRepository.getRunningCountFor(requestQueueNumber) == 0)
             markRequestAsComplete(requestQueueNumber);
 
         // Sending New PasswordLists
         if (requestQueueNumber != null &&
-                passwordListDescriptorRepository.getRunningCount() < MAX_CONCURRENT_PASSWORD_LISTS &&
-                passwordListDescriptorRepository.getPendingCount() > 0){
+                candidateValueListDescriptorRepository.getRunningCount() < MAX_CONCURRENT_PASSWORD_LISTS &&
+                candidateValueListDescriptorRepository.getPendingCount() > 0) {
 
-            PasswordListDescriptor passwordListDescriptor = processNextPasswordList();
+            CanditateValueListDescriptor canditateValueListDescriptor = processNextPasswordList();
             // Async Recursive Dispatch
             executorService.execute(() -> process(
                     requestQueueNumber,
-                    passwordListDescriptor.getQueueNumber(),
+                    canditateValueListDescriptor.getQueueNumber(),
                     null));
             return;
         }
@@ -153,158 +152,160 @@ public class ProcessingCore {
         // Section 3 : Requests
 
         // Sending New PasswordRequests
-        if (passwordRequestRepository.getRunningCount() < MAX_CONCURRENT_PASSWORD_REQUESTS &&
-                passwordRequestRepository.getPendingCount() > 0){
+        if (crackRequestRepository.getRunningCount() < MAX_CONCURRENT_PASSWORD_REQUESTS &&
+                crackRequestRepository.getPendingCount() > 0) {
 
-            PasswordRequest passwordRequest = processNextRequest();
+            CrackRequest crackRequest = processNextRequest();
 
             // If null, there was a processing error.
-            if(passwordRequest == null)
+            if (crackRequest == null)
                 return;
             // Async Recursive Dispatch
             executorService.execute(() -> process(
-                    passwordRequest.getQueueNumber(),
+                    crackRequest.getQueueNumber(),
                     null,
                     null));
             return;
         }
     }
 
-    private PasswordRequest processNextRequest(){
+    private CrackRequest processNextRequest() {
         log.info("Attempting to process next password request...");
-        Page<PasswordRequest> passwordRequestPage =
-                passwordRequestRepository.getFirstPendingRequest(new PageRequest(0,1));
-        PasswordRequest passwordRequest;
-        if(passwordRequestPage.getTotalElements() < 1)
+        Page<CrackRequest> passwordRequestPage =
+                crackRequestRepository.getFirstPendingRequest(new PageRequest(0, 1));
+        CrackRequest crackRequest;
+        if (passwordRequestPage.getTotalElements() < 1)
             throw new RuntimeException("Failed to get a password request to process");
         else
-            passwordRequest = passwordRequestPage.getContent().get(0);
+            crackRequest = passwordRequestPage.getContent().get(0);
 
         // Create Password List entries
-        String[] passwordLists = passwordRequest.getColonDelimitedPasswordListNames().split(":");
-        for(String passwordListName : passwordLists){
-            PasswordList passwordList = passwordListRepository.findByListName(passwordListName);
-            if(passwordList == null){
+        String[] passwordLists = crackRequest.getColonDelimitedPasswordListNames().split(":");
+        ArrayList<CanditateValueListDescriptor> canditateValueListDescriptors = new ArrayList<>();
+        for (String passwordListName : passwordLists) {
+            CandidateValueList candidateValueList = candidateValueListRepository.findByListName(passwordListName);
+            if (candidateValueList == null) {
                 log.error("Failed to find list with name {}. Marking Request as ERROR!", passwordListName);
-                passwordRequest.setProcessingStatus(ProcessingStatus.ERROR);
-                passwordRequestRepository.save(passwordRequest);
+                crackRequest.setProcessingStatus(ProcessingStatus.ERROR.name());
+                crackRequestRepository.save(crackRequest);
                 return null;
-            }
-            else{
+            } else {
                 log.info("Added Password List with name {} as a descriptor for request number {}",
-                        passwordListName, passwordRequest.getQueueNumber());
-                passwordListDescriptorRepository.save(
-                        new PasswordListDescriptor(null, ProcessingStatus.PENDING, passwordRequest, passwordList));
+                        passwordListName, crackRequest.getQueueNumber());
+                canditateValueListDescriptors.add(
+                        new CanditateValueListDescriptor(null, ProcessingStatus.PENDING.name(), crackRequest, candidateValueList));
             }
         }
-        passwordRequest.setProcessingStatus(ProcessingStatus.RUNNING);
-        passwordRequestRepository.save(passwordRequest);
-        log.info("Success! PasswordRequest {} added to running queue", passwordRequest);
-        return passwordRequest;
+        // Save Together
+        candidateValueListDescriptorRepository.save(canditateValueListDescriptors);
+        crackRequest.setProcessingStatus(ProcessingStatus.RUNNING.name());
+        crackRequestRepository.save(crackRequest);
+        log.info("Success! PasswordRequest {} added to running queue", crackRequest);
+        return crackRequest;
     }
 
-    private PasswordListDescriptor processNextPasswordList(){
+    private CanditateValueListDescriptor processNextPasswordList() {
         log.info("Attempting to process next password list...");
-        Page<PasswordListDescriptor> passwordListDescriptorPage =
-                passwordListDescriptorRepository.getFirstAvailablePending(new PageRequest(0,1));
-        PasswordListDescriptor passwordListDescriptor;
-        if(passwordListDescriptorPage.getTotalElements() < 1 )
+        Page<CanditateValueListDescriptor> passwordListDescriptorPage =
+                candidateValueListDescriptorRepository.getFirstAvailablePending(new PageRequest(0, 1));
+        CanditateValueListDescriptor canditateValueListDescriptor;
+        if (passwordListDescriptorPage.getTotalElements() < 1)
             throw new RuntimeException("Failed to get a PasswordList to process");
         else
-            passwordListDescriptor = passwordListDescriptorPage.getContent().get(0);
+            canditateValueListDescriptor = passwordListDescriptorPage.getContent().get(0);
 
         // Create Jobs
-        for(long i=0; i<passwordListDescriptor.getPasswordList().getLineCount(); i=i+JOB_SIZE){
+        for (long i = 0; i < canditateValueListDescriptor.getCandidateValueList().getLineCount(); i = i + JOB_SIZE) {
             JobDescriptor jobDescriptor = new JobDescriptor(
                     null,
-                    ProcessingStatus.PENDING,
-                    passwordListDescriptor.getPasswordRequest(),
-                    passwordListDescriptor,
-                    passwordListDescriptor.getPasswordList(),
-                    i+1,
-                    Math.min(i+JOB_SIZE, passwordListDescriptor.getPasswordList().getLineCount()),
+                    ProcessingStatus.PENDING.name(),
+                    canditateValueListDescriptor.getCrackRequest(),
+                    canditateValueListDescriptor,
+                    canditateValueListDescriptor.getCandidateValueList(),
+                    i + 1,
+                    Math.min(i + JOB_SIZE, canditateValueListDescriptor.getCandidateValueList().getLineCount()),
                     0);
             jobDescriptorRepository.save(jobDescriptor);
         }
 
         // Set As Running
-        passwordListDescriptor.setProcessingStatus(ProcessingStatus.RUNNING);
-        passwordListDescriptorRepository.save(passwordListDescriptor);
+        canditateValueListDescriptor.setProcessingStatus(ProcessingStatus.RUNNING.name());
+        candidateValueListDescriptorRepository.save(canditateValueListDescriptor);
 
-        log.info("Success! PasswordList {} added to running queue", passwordListDescriptor);
-        return passwordListDescriptor;
+        log.info("Success! PasswordList {} added to running queue", canditateValueListDescriptor);
+        return canditateValueListDescriptor;
     }
 
-    private JobDescriptor processNextJob(){
+    private JobDescriptor processNextJob() {
         log.info("Attempting to process next job...");
         Page<JobDescriptor> jobDescriptorPage =
                 jobDescriptorRepository.getFirstAvailableJob(new PageRequest(0, 1));
         JobDescriptor jobDescriptor;
-        if(jobDescriptorPage.getTotalElements() < 1)
+        if (jobDescriptorPage.getTotalElements() < 1)
             throw new RuntimeException("Failed to get a Job to process");
         else
             jobDescriptor = jobDescriptorPage.getContent().get(0);
 
         ArrayList<String> candidateValues = linearPasswordReader.readCandidateValuesIntoJob(jobDescriptor);
-        if(candidateValues == null){
+        if (candidateValues == null) {
             log.error("Failed to get values from password list. Marking job as error");
-            jobDescriptor.setProcessingStatus(ProcessingStatus.ERROR);
+            jobDescriptor.setProcessingStatus(ProcessingStatus.ERROR.name());
             jobDescriptorRepository.save(jobDescriptor);
             return null;
         }
 
         Job job = new Job(jobDescriptor.getQueueNumber(),
-                jobDescriptor.getPasswordListDescriptor().getQueueNumber(),
-                jobDescriptor.getPasswordRequest().getQueueNumber(),
-                jobDescriptor.getPasswordRequest().getPasswordCaptureInBase64(),
+                jobDescriptor.getCanditateValueListDescriptor().getQueueNumber(),
+                jobDescriptor.getCrackRequest().getQueueNumber(),
+                jobDescriptor.getCrackRequest().getPasswordCaptureInBase64(),
                 candidateValues,
-                jobDescriptor.getPasswordListDescriptor().getPasswordList().getCharacterSet());
+                jobDescriptor.getCanditateValueListDescriptor().getCandidateValueList().getCharacterSet());
 //
 //        // submit job
 //        client.submitJob();
 
-        jobDescriptor.setProcessingStatus(ProcessingStatus.RUNNING);
+        jobDescriptor.setProcessingStatus(ProcessingStatus.RUNNING.name());
         jobDescriptorRepository.save(jobDescriptor);
         log.info("Success! JobDescriptor {} added to running queue", jobDescriptor);
         return jobDescriptor;
     }
 
-    private void markJobAsComplete(long jobDescriptorQueueNumber){
+    private void markJobAsComplete(long jobDescriptorQueueNumber) {
         log.info("Marking Job with id {} as complete", jobDescriptorQueueNumber);
-        JobDescriptor jobDescriptor = jobDescriptorRepository.getOne(jobDescriptorQueueNumber);
-        if(jobDescriptor == null)
+        JobDescriptor jobDescriptor = jobDescriptorRepository.findOne(jobDescriptorQueueNumber);
+        if (jobDescriptor == null)
             throw new RuntimeException("Could not find job!");
-        if(jobDescriptor.getProcessingStatus() != ProcessingStatus.RUNNING)
+        if (!Objects.equals(jobDescriptor.getProcessingStatus(), ProcessingStatus.RUNNING.name()))
             throw new RuntimeException("Job was not in running status");
-        jobDescriptor.setProcessingStatus(ProcessingStatus.COMPLETE);
+        jobDescriptor.setProcessingStatus(ProcessingStatus.COMPLETE.name());
         jobDescriptorRepository.save(jobDescriptor);
     }
 
-    private void markPasswordListAsComplete(long passwordListDescriptorQueueNumber){
+    private void markPasswordListAsComplete(long passwordListDescriptorQueueNumber) {
         log.info("Marking PasswordList with id {} as complete", passwordListDescriptorQueueNumber);
-        PasswordListDescriptor passwordListDescriptor = passwordListDescriptorRepository.getOne(passwordListDescriptorQueueNumber);
-        if(passwordListDescriptor == null)
+        CanditateValueListDescriptor canditateValueListDescriptor = candidateValueListDescriptorRepository.findOne(passwordListDescriptorQueueNumber);
+        if (canditateValueListDescriptor == null)
             throw new RuntimeException("Could not find PasswordList!");
-        if(passwordListDescriptor.getProcessingStatus() != ProcessingStatus.RUNNING)
+        if (!Objects.equals(canditateValueListDescriptor.getProcessingStatus(), ProcessingStatus.RUNNING.name()))
             throw new RuntimeException("List was not in running status");
-        passwordListDescriptor.setProcessingStatus(ProcessingStatus.COMPLETE);
-        passwordListDescriptorRepository.save(passwordListDescriptor);
+        canditateValueListDescriptor.setProcessingStatus(ProcessingStatus.COMPLETE.name());
+        candidateValueListDescriptorRepository.save(canditateValueListDescriptor);
     }
 
-    private void markRequestAsComplete(long requestQueueNumber){
+    private void markRequestAsComplete(long requestQueueNumber) {
         log.info("Marking Request with id {} as complete", requestQueueNumber);
-        PasswordRequest passwordRequest = passwordRequestRepository.getOne(requestQueueNumber);
-        if(passwordRequest == null)
+        CrackRequest crackRequest = crackRequestRepository.findOne(requestQueueNumber);
+        if (crackRequest == null)
             throw new RuntimeException("Could not find PasswordRequest!");
-        if(passwordRequest.getProcessingStatus() != ProcessingStatus.RUNNING)
+        if (!Objects.equals(crackRequest.getProcessingStatus(), ProcessingStatus.RUNNING.name()))
             throw new RuntimeException("Request was not in running status");
-        passwordRequest.setProcessingStatus(ProcessingStatus.COMPLETE);
-        passwordRequestRepository.save(passwordRequest);
+        crackRequest.setProcessingStatus(ProcessingStatus.COMPLETE.name());
+        crackRequestRepository.save(crackRequest);
     }
 
 
-
-    public void recoverJob(JobDescriptor jobDescriptor){}
+    public void recoverJob(JobDescriptor jobDescriptor) {
+    }
 }
 
 

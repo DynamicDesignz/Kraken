@@ -13,13 +13,23 @@ import javax.persistence.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class PasswordRequest {
+public class CrackRequest {
 
     @Id
     @Column
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long queueNumber;
 
+    @Column
+    private String requestType;
+
+    /**
+     * Processing Status Definition {@link ProcessingStatus}
+     * <p>
+     * {@link ProcessingStatus#ERROR} : Failed to launch request when processing was beginning
+     * <p>
+     * {@link ProcessingStatus#PENDING} : Currently pending to be processed
+     */
     @Column
     private String processingStatus;
 

@@ -1,7 +1,6 @@
 package com.wali.kraken.domain.core;
 
-import com.wali.kraken.domain.PasswordList;
-import com.wali.kraken.enumerations.ProcessingStatus;
+import com.wali.kraken.domain.CandidateValueList;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +13,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class PasswordListDescriptor {
+public class CanditateValueListDescriptor {
 
     @Id
     @Column
@@ -22,14 +21,14 @@ public class PasswordListDescriptor {
     private Long queueNumber;
 
     @Column
-    private ProcessingStatus processingStatus;
+    private String processingStatus;
 
     @ManyToOne
     @JoinColumn(name = "request_queue_number")
-    private PasswordRequest passwordRequest;
+    private CrackRequest crackRequest;
 
     @ManyToOne
     @JoinColumn(name = "password_list")
-    private PasswordList passwordList;
+    private CandidateValueList candidateValueList;
 
 }

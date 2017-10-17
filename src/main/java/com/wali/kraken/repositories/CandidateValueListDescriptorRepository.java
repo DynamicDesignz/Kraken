@@ -1,6 +1,6 @@
 package com.wali.kraken.repositories;
 
-import com.wali.kraken.domain.core.PasswordListDescriptor;
+import com.wali.kraken.domain.core.CanditateValueListDescriptor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 /**
  * Created by Wali on 10/12/2017.
  */
-public interface PasswordListDescriptorRepository extends JpaRepository<PasswordListDescriptor, Long> {
+public interface CandidateValueListDescriptorRepository extends JpaRepository<CanditateValueListDescriptor, Long> {
 
     @Query("SELECT COUNT(pld) FROM PasswordListDescriptor pld " +
             "WHERE pld.processingStatus = 'PENDING' " +
@@ -28,5 +28,5 @@ public interface PasswordListDescriptorRepository extends JpaRepository<Password
     long getRunningCount();
 
     @Query("SELECT pld FROM PasswordListDescriptor pld WHERE pld.processingStatus = 'PENDING'")
-    Page<PasswordListDescriptor> getFirstAvailablePending(Pageable page);
+    Page<CanditateValueListDescriptor> getFirstAvailablePending(Pageable page);
 }
