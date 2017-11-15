@@ -13,7 +13,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class CanditateValueListDescriptor {
+public class CandidateValueListDescriptor {
 
     @Id
     @Column
@@ -28,7 +28,7 @@ public class CanditateValueListDescriptor {
     private CrackRequest crackRequest;
 
     @ManyToOne
-    @JoinColumn(name = "password_list")
+    @JoinColumn(name = "candidate_value_list")
     private CandidateValueList candidateValueList;
 
 }

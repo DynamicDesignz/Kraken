@@ -15,25 +15,32 @@ import javax.persistence.*;
 @Entity
 public class JobDescriptor {
 
-    @Column
-    public long startLine;
-    @Column
-    public long end;
-    @Column
-    public long timeRunning;
     @Id
     @Column
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long queueNumber;
+
     @Column
     private String processingStatus;
+
     @ManyToOne
     @JoinColumn(name = "request_queue_number")
     private CrackRequest crackRequest;
+
     @ManyToOne
-    @JoinColumn(name = "password_list_queue_number")
-    private CanditateValueListDescriptor canditateValueListDescriptor;
+    @JoinColumn(name = "candidate_value_list_queue_number")
+    private CandidateValueListDescriptor candidateValueListDescriptor;
+
     @ManyToOne
     @JoinColumn(name = "password_list")
     private CandidateValueList candidateValueList;
+
+    @Column
+    public long startLine;
+
+    @Column
+    public long endLine;
+
+    @Column
+    public long timeRunning;
 }

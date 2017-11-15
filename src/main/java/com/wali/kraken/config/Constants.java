@@ -35,4 +35,6 @@ public class Constants {
         ServerOnly, ServerAndWorker, WorkerOnly
     }
 
+    public static final String CANDIDATE_VALUE_LIST_DIRECTORY = "candidate-value-lists";
+
 }

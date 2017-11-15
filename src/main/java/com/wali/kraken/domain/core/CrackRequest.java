@@ -34,13 +34,13 @@ public class CrackRequest {
     private String processingStatus;
 
     @Column
-    private String SSIDToFind;
-
-    @Column
     private String passwordCaptureInBase64;
 
     @Column
-    private String colonDelimitedPasswordListNames;
+    private String colonDelimitedCandidateValueListNames;
+
+    @Column
+    private String serializedMap;
 
     @Column
     private String result;

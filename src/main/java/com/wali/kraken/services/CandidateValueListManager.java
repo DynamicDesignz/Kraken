@@ -1,6 +1,8 @@
 package com.wali.kraken.services;
 
+import com.wali.kraken.config.Constants;
 import com.wali.kraken.domain.CandidateValueList;
+import com.wali.kraken.enumerations.RequestType;
 import com.wali.kraken.repositories.CandidateValueListRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -20,20 +22,13 @@ public class CandidateValueListManager {
 
         String baseDirectory = environment.getProperty("kraken.tmp-folder.base", "./kraken-temp-folder");
         // Load default list
-        File defaultList = new File(baseDirectory + "/" + "candidate_value_lists/" + "default_list.txt");
-        if (!defaultList.exists())
-            return;
-        else {
-            CandidateValueList defaultWPAList = new CandidateValueList(defaultList.getAbsolutePath());
+        File defaultList = new File(baseDirectory +
+                "/" + Constants.CANDIDATE_VALUE_LIST_DIRECTORY + "/"
+                + "default-list.txt");
+        if (defaultList.exists()) {
+            CandidateValueList defaultWPAList = new CandidateValueList(defaultList.getAbsolutePath(), RequestType.WPA);
             candidateValueListRepository.save(defaultWPAList);
         }
-
-
-//        ClassLoader classLoader = this.getClass().getClassLoader();
-//        String path = classLoader.getResource("candidate_value_lists/default_list.txt").getPath();
-//        path = path.replaceFirst("^/(.:/)", "$1");
-//        PasswordList defaultPasswordList = new PasswordList(path);
-//        candidateValueListRepository.save(defaultPasswordList);
     }
 
     // TODO : Add Scheduled Task to check if there are new password lists put

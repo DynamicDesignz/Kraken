@@ -1,6 +1,6 @@
 package com.wali.kraken.repositories;
 
-import com.wali.kraken.domain.core.CanditateValueListDescriptor;
+import com.wali.kraken.domain.core.CandidateValueListDescriptor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,24 +9,24 @@ import org.springframework.data.jpa.repository.Query;
 /**
  * Created by Wali on 10/12/2017.
  */
-public interface CandidateValueListDescriptorRepository extends JpaRepository<CanditateValueListDescriptor, Long> {
+public interface CandidateValueListDescriptorRepository extends JpaRepository<CandidateValueListDescriptor, Long> {
 
-    @Query("SELECT COUNT(pld) FROM PasswordListDescriptor pld " +
-            "WHERE pld.processingStatus = 'PENDING' " +
-            "AND pld.passwordRequest.queueNumber = ?1 ")
+    @Query("SELECT COUNT(var) FROM CandidateValueListDescriptor var " +
+            "WHERE var.processingStatus = 'PENDING' " +
+            "AND var.crackRequest.queueNumber = ?1 ")
     long getPendingCountFor(long requestQueueNumber);
 
-    @Query("SELECT COUNT(pld) FROM PasswordListDescriptor pld " +
-            "WHERE pld.processingStatus = 'RUNNING' " +
-            "AND pld.passwordRequest.queueNumber = ?1 ")
+    @Query("SELECT COUNT(var) FROM CandidateValueListDescriptor var " +
+            "WHERE var.processingStatus = 'RUNNING' " +
+            "AND var.crackRequest.queueNumber = ?1 ")
     long getRunningCountFor(long requestQueueNumber);
 
-    @Query("SELECT COUNT(pld) FROM PasswordListDescriptor pld WHERE pld.processingStatus = 'PENDING'")
+    @Query("SELECT COUNT(var) FROM CandidateValueListDescriptor var WHERE var.processingStatus = 'PENDING'")
     long getPendingCount();
 
-    @Query("SELECT COUNT(pld) FROM PasswordListDescriptor pld WHERE pld.processingStatus = 'RUNNING'")
+    @Query("SELECT COUNT(var) FROM CandidateValueListDescriptor var WHERE var.processingStatus = 'RUNNING'")
     long getRunningCount();
 
-    @Query("SELECT pld FROM PasswordListDescriptor pld WHERE pld.processingStatus = 'PENDING'")
-    Page<CanditateValueListDescriptor> getFirstAvailablePending(Pageable page);
+    @Query("SELECT var FROM CandidateValueListDescriptor var WHERE var.processingStatus = 'PENDING'")
+    Page<CandidateValueListDescriptor> getFirstAvailablePending(Pageable page);
 }

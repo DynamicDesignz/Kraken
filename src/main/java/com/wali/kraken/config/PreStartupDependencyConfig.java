@@ -12,8 +12,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * Created by Wali on 10/14/2017.
@@ -71,12 +71,24 @@ public class PreStartupDependencyConfig {
             testForLinuxAircrack();
 
         // Copy default wpa password list
-        copyFileToTemporaryDirectory("candidate_value_lists/wpa/", "default_list.txt");
+        copyFileToTemporaryDirectory(Constants.CANDIDATE_VALUE_LIST_DIRECTORY + "/" + "wpa" + "/", "default-list.txt");
     }
 
     @PreDestroy
-    public void deleteTemporaryDirectory() {
+    public void deleteTemporaryDirectory() throws IOException {
+        Files.walkFileTree(Paths.get(temporaryFolderBase), new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
 
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     private void copyFileToTemporaryDirectory(String resourcePath, String filename) throws IOException {

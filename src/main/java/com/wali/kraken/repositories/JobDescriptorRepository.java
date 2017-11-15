@@ -13,14 +13,14 @@ public interface JobDescriptorRepository extends JpaRepository<JobDescriptor, Lo
 
     @Query("SELECT COUNT(jd) FROM JobDescriptor jd " +
             "WHERE jd.processingStatus = 'PENDING' " +
-            "AND jd.passwordRequest.queueNumber = ?1 " +
-            "AND jd.passwordListDescriptor.queueNumber = ?2")
+            "AND jd.crackRequest.queueNumber = ?1 " +
+            "AND jd.candidateValueListDescriptor.queueNumber = ?2")
     long getPendingCountFor(long requestQueueNumber, long passwordListQueueNumber);
 
     @Query("SELECT COUNT(jd) FROM JobDescriptor jd " +
             "WHERE jd.processingStatus = 'RUNNING' " +
-            "AND jd.passwordRequest.queueNumber = ?1 " +
-            "AND jd.passwordListDescriptor.queueNumber = ?2")
+            "AND jd.crackRequest.queueNumber = ?1 " +
+            "AND jd.candidateValueListDescriptor.queueNumber = ?2")
     long getRunningCountFor(long requestQueueNumber, long passwordListQueueNumber);
 
     @Query("SELECT COUNT(jd) FROM JobDescriptor jd WHERE jd.processingStatus = 'PENDING'")

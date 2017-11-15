@@ -22,17 +22,17 @@ public class LinearPasswordReader implements PasswordListReader {
 
     @Override
     public ArrayList<String> readCandidateValuesIntoJob(JobDescriptor jobDescriptor) {
-        String key = jobDescriptor.getPasswordRequest().getQueueNumber()
+        String key = jobDescriptor.getCrackRequest().getQueueNumber()
                 + "-" +
-                jobDescriptor.getCanditateValueListDescriptor().getQueueNumber();
+                jobDescriptor.getCandidateValueListDescriptor().getQueueNumber();
         if (!scannerMap.containsKey(key))
             try {
-                scannerMap.put(key, new Scanner(new File(jobDescriptor.getPasswordList().getListPath())));
+                scannerMap.put(key, new Scanner(new File(jobDescriptor.getCandidateValueList().getListPath())));
             } catch (Exception e) {
                 return null;
             }
 
-        long range = (jobDescriptor.getEnd() - jobDescriptor.getStartLine()) + 1;
+        long range = (jobDescriptor.getEndLine() - jobDescriptor.getStartLine()) + 1;
         ArrayList<String> retVal = new ArrayList<>();
         for (long i = 0; i < range; i++) {
             try {

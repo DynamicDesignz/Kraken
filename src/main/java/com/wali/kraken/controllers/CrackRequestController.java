@@ -1,5 +1,6 @@
 package com.wali.kraken.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wali.kraken.core.ProcessingCore;
 import com.wali.kraken.domain.CandidateValueList;
 import com.wali.kraken.domain.core.CrackRequest;
@@ -18,9 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -32,6 +31,7 @@ public class CrackRequestController {
     private ServiceFunctions serviceFunctions;
     private CrackRequestRepository crackRequestRepository;
     private CandidateValueListRepository candidateValueListRepository;
+    private ObjectMapper mapper;
 
     @Autowired
     public CrackRequestController(ServiceFunctions serviceFunctions,
@@ -43,11 +43,12 @@ public class CrackRequestController {
         this.executorService = Executors.newSingleThreadExecutor();
         this.crackRequestRepository = crackRequestRepository;
         this.candidateValueListRepository = candidateValueListRepository;
+        this.mapper = new ObjectMapper();
     }
 
     // Create WPA Password Request
     @PostMapping("/createWPARequest")
-    public ResponseEntity<CrackRequest> createPasswordRequest(
+    public ResponseEntity<CrackRequest> createWPARequest(
             @RequestPart(value = "password-capture-file") MultipartFile passwordCaptureFile,
             @RequestParam(value = "ssid") String ssid,
             @RequestParam(value = "candidate-value-list") String[] candidateValueLists) {
@@ -68,12 +69,18 @@ public class CrackRequestController {
                         "was not a WPA CandidateValueList");
         }
 
+        Map<String,String> serializedMap = new HashMap<>();
+        serializedMap.put("SSID", ssid);
+        String mapAsString;
+        try { mapAsString = mapper.writeValueAsString(serializedMap); }
+        catch (Exception e){ throw new KrakenException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not serialize SSID");}
+
         // Create Password Request Object
         CrackRequest crackRequest = new CrackRequest(
                 null,
                 RequestType.WPA.name(),
                 ProcessingStatus.PENDING.name(),
-                ssid,
+                mapAsString,
                 Base64.getEncoder().encodeToString(passwordCaptureFileBytes),
                 String.join(":", candidateValueLists),
                 null);
@@ -122,7 +129,7 @@ public class CrackRequestController {
                         ProcessingStatus.PENDING.name(),
                         "wali",
                         "walipash",
-                        "default_list.txt",
+                        "default-list.txt",
                         null));
         executorService.submit(() -> processingCore.process(null,
                 null,
