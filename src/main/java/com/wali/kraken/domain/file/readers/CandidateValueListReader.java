@@ -1,10 +1,10 @@
-package com.wali.kraken.core.filereaders;
+package com.wali.kraken.domain.file.readers;
 
 import com.wali.kraken.domain.core.JobDescriptor;
 
 import java.util.ArrayList;
 
-public interface PasswordListReader {
+public interface CandidateValueListReader {
 
     public ArrayList<String> readCandidateValuesIntoJob(JobDescriptor jobDescriptor);
 

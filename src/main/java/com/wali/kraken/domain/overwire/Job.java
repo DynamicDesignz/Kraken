@@ -12,13 +12,13 @@ public class Job implements Serializable {
 
     private long queueNumber;
 
-    private long candidateValueListQueueNumber;
+    private long candidateValueListDescriptorQueueNumber;
 
     private long crackRequestQueueNumber;
 
     private String matchValueInBase64;
 
-    private ArrayList<String> candidateValues;
+    private String colonDelimitedCandidateValues;
 
     private String charSet;
 }

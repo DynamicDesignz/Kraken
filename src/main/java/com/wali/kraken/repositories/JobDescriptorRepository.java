@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
+
 /**
  * Created by Wali on 10/12/2017.
  */
@@ -31,4 +33,18 @@ public interface JobDescriptorRepository extends JpaRepository<JobDescriptor, Lo
 
     @Query("SELECT jd FROM JobDescriptor jd WHERE jd.processingStatus = 'PENDING'")
     Page<JobDescriptor> getFirstAvailableJob(Pageable page);
+
+    @Query("SELECT jd FROM JobDescriptor jd " +
+            "WHERE jd.candidateValueListDescriptor.crackRequestDescriptor.queueNumber = ?1 " +
+            "AND jd.candidateValueListDescriptor.queueNumber = ?2 " +
+            "AND jd.queueNumber = ?3")
+    JobDescriptor getJobDescriptorByKey(long crackRequestDescriptorQueueNumber,
+                                        long candidateValueListDescriptorQueueNumber,
+                                        long jobDescriptorQueueNumber);
+
+
+    @Query("SELECT jf FROM JobDescriptor jd " +
+            "WHERE jd.candidateValueListDescriptor.crackRequestDescriptor.queueNumber = ?1 " +
+            "AND jd.processStatus != 'COMPLETE' ")
+    List<JobDescriptor> getAllNotCompleteForRequest(long crackRequestDescriptorQueueNumber);
 }

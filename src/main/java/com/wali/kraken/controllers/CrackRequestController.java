@@ -1,9 +1,9 @@
 package com.wali.kraken.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wali.kraken.core.ProcessingCore;
+import com.wali.kraken.core.server.ProcessingCore;
 import com.wali.kraken.domain.CandidateValueList;
-import com.wali.kraken.domain.core.CrackRequest;
+import com.wali.kraken.domain.core.CrackRequestDescriptor;
 import com.wali.kraken.enumerations.ProcessingStatus;
 import com.wali.kraken.enumerations.RequestType;
 import com.wali.kraken.repositories.CandidateValueListRepository;
@@ -11,6 +11,7 @@ import com.wali.kraken.repositories.CrackRequestRepository;
 import com.wali.kraken.services.ServiceFunctions;
 import com.wali.kraken.utils.KrakenException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@Profile("server")
 @RestController("/crack-request")
 public class CrackRequestController {
 
@@ -47,9 +49,9 @@ public class CrackRequestController {
     }
 
     // Create WPA Password Request
-    @PostMapping("/createWPARequest")
-    public ResponseEntity<CrackRequest> createWPARequest(
-            @RequestPart(value = "password-capture-file") MultipartFile passwordCaptureFile,
+    @PostMapping(value = "/createWPARequest")
+    public ResponseEntity<CrackRequestDescriptor> createWPARequest(
+            @RequestPart(value = "packet-capture-file") MultipartFile passwordCaptureFile,
             @RequestParam(value = "ssid") String ssid,
             @RequestParam(value = "candidate-value-list") String[] candidateValueLists) {
 
@@ -64,8 +66,11 @@ public class CrackRequestController {
 
         for (String candidateValueListName : candidateValueLists) {
             CandidateValueList candidateValueList = candidateValueListRepository.findByListName(candidateValueListName);
-            if (!Objects.equals(candidateValueList.getListType(), RequestType.WPA.name()))
-                throw new KrakenException(HttpStatus.BAD_REQUEST, "List with name " + candidateValueListName + "" +
+            if(candidateValueList == null)
+                throw new KrakenException(HttpStatus.BAD_REQUEST, "List with name " + candidateValueListName + " " +
+                        "does not exist");
+            if (!Objects.equals(candidateValueList.getListType(), RequestType.WPA))
+                throw new KrakenException(HttpStatus.BAD_REQUEST, "List with name " + candidateValueListName + " " +
                         "was not a WPA CandidateValueList");
         }
 
@@ -76,17 +81,17 @@ public class CrackRequestController {
         catch (Exception e){ throw new KrakenException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not serialize SSID");}
 
         // Create Password Request Object
-        CrackRequest crackRequest = new CrackRequest(
+        CrackRequestDescriptor crackRequestDescriptor = new CrackRequestDescriptor(
                 null,
-                RequestType.WPA.name(),
-                ProcessingStatus.PENDING.name(),
-                mapAsString,
+                RequestType.WPA,
+                ProcessingStatus.PENDING,
                 Base64.getEncoder().encodeToString(passwordCaptureFileBytes),
                 String.join(":", candidateValueLists),
+                mapAsString,
                 null);
 
         // Add them to repository
-        crackRequestRepository.save(crackRequest);
+        crackRequestRepository.save(crackRequestDescriptor);
 
         // Submit and call processing core on another thread
         executorService.submit(() -> processingCore.process(null,
@@ -94,12 +99,12 @@ public class CrackRequestController {
                 null));
 
         // Return a response
-        return new ResponseEntity<>(crackRequest, new HttpHeaders(), HttpStatus.CREATED);
+        return new ResponseEntity<>(crackRequestDescriptor, new HttpHeaders(), HttpStatus.CREATED);
     }
 
     // Delete a Password Request
     @DeleteMapping
-    public ResponseEntity<CrackRequest> deletePasswordRequest(@RequestParam Long id) {
+    public ResponseEntity<CrackRequestDescriptor> deletePasswordRequest(@RequestParam Long id) {
 //        PasswordRequest p = pendingPasswordRequestsRepository.findOne(id);
 //        if (p != null)
 //            return new ResponseEntity<>(p, new HttpHeaders(), HttpStatus.OK);
@@ -112,29 +117,13 @@ public class CrackRequestController {
     }
 
     @GetMapping(value = "/get-pending-password-requests", produces = {MediaType.APPLICATION_JSON_VALUE})
-    public List<CrackRequest> getPendingPasswordRequests() {
+    public List<CrackRequestDescriptor> getPendingPasswordRequests() {
         return crackRequestRepository.getAllPending();
     }
 
     @GetMapping(value = "/get-completed-password-requests", produces = {MediaType.APPLICATION_JSON_VALUE})
-    public List<CrackRequest> getCompletedPasswordRequests() {
+    public List<CrackRequestDescriptor> getCompletedPasswordRequests() {
         return crackRequestRepository.getAllCompleted();
-    }
-
-    @GetMapping(value = "/test")
-    public void test() {
-        crackRequestRepository.save(
-                new CrackRequest(null,
-                        RequestType.WPA.name(),
-                        ProcessingStatus.PENDING.name(),
-                        "wali",
-                        "walipash",
-                        "default-list.txt",
-                        null));
-        executorService.submit(() -> processingCore.process(null,
-                null,
-                null));
-
     }
 
 }

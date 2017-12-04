@@ -7,9 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -26,7 +24,8 @@ public class CandidateValueList {
     private String listPath;
 
     @Column
-    private String listType;
+    @Enumerated(EnumType.STRING)
+    private RequestType listType;
 
     @Column
     private String listName;
@@ -42,7 +41,7 @@ public class CandidateValueList {
 
     public CandidateValueList(String listPath, RequestType requestType) {
         this.listPath = listPath;
-        this.listType = requestType.name();
+        this.listType = requestType;
 
         // If file does not exist in specified location, return error
         if (!Files.exists(Paths.get(listPath)))

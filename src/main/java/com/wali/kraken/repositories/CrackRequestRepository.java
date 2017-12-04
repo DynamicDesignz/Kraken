@@ -1,6 +1,7 @@
 package com.wali.kraken.repositories;
 
-import com.wali.kraken.domain.core.CrackRequest;
+import com.wali.kraken.domain.core.CrackRequestDescriptor;
+import com.wali.kraken.domain.core.CrackRequestDescriptor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,7 +12,7 @@ import java.util.List;
 /**
  * Created by Wali on 10/12/2017.
  */
-public interface CrackRequestRepository extends JpaRepository<CrackRequest, Long> {
+public interface CrackRequestRepository extends JpaRepository<CrackRequestDescriptor, Long> {
 
     @Query("SELECT COUNT(r) FROM CrackRequest r WHERE r.processingStatus = 'PENDING'")
     long getPendingCount();
@@ -20,11 +21,11 @@ public interface CrackRequestRepository extends JpaRepository<CrackRequest, Long
     long getRunningCount();
 
     @Query("SELECT r FROM CrackRequest r WHERE r.processingStatus = 'PENDING'")
-    Page<CrackRequest> getFirstPendingRequest(Pageable page);
+    Page<CrackRequestDescriptor> getFirstPendingRequest(Pageable page);
 
     @Query("SELECT r FROM CrackRequest r WHERE r.processingStatus = 'PENDING'")
-    List<CrackRequest> getAllPending();
+    List<CrackRequestDescriptor> getAllPending();
 
     @Query("SELECT r FROM CrackRequest r WHERE r.processingStatus = 'COMPLETED'")
-    List<CrackRequest> getAllCompleted();
+    List<CrackRequestDescriptor> getAllCompleted();
 }

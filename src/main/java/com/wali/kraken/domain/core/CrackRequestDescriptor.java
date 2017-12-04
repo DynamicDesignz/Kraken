@@ -1,6 +1,7 @@
 package com.wali.kraken.domain.core;
 
 import com.wali.kraken.enumerations.ProcessingStatus;
+import com.wali.kraken.enumerations.RequestType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,34 +14,34 @@ import javax.persistence.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class CrackRequest {
+public class CrackRequestDescriptor {
 
     @Id
     @Column
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long queueNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column
-    private String requestType;
+    private RequestType requestType;
 
-    /**
-     * Processing Status Definition {@link ProcessingStatus}
-     * <p>
-     * {@link ProcessingStatus#ERROR} : Failed to launch request when processing was beginning
-     * <p>
-     * {@link ProcessingStatus#PENDING} : Currently pending to be processed
-     */
+    @Enumerated(EnumType.STRING)
     @Column
-    private String processingStatus;
+    private ProcessingStatus processingStatus;
 
     @Column
+    @Lob
     private String passwordCaptureInBase64;
 
     @Column
     private String colonDelimitedCandidateValueListNames;
 
+    /* This field contains values relevant to the Request Type
+    *
+    *   Eg : WPA Crack Requests would require SSID as Map data
+    */
     @Column
-    private String serializedMap;
+    private String metadataMap;
 
     @Column
     private String result;

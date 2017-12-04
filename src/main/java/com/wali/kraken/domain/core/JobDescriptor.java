@@ -1,6 +1,7 @@
 package com.wali.kraken.domain.core;
 
 import com.wali.kraken.domain.CandidateValueList;
+import com.wali.kraken.enumerations.ProcessingStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,20 +21,17 @@ public class JobDescriptor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long queueNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column
-    private String processingStatus;
+    private ProcessingStatus processingStatus;
 
     @ManyToOne
-    @JoinColumn(name = "request_queue_number")
-    private CrackRequest crackRequest;
-
-    @ManyToOne
-    @JoinColumn(name = "candidate_value_list_queue_number")
+    @JoinColumn
     private CandidateValueListDescriptor candidateValueListDescriptor;
 
-    @ManyToOne
-    @JoinColumn(name = "password_list")
-    private CandidateValueList candidateValueList;
+    @Column
+    @Lob
+    private String colonDelimitedCandidateValues;
 
     @Column
     public long startLine;
@@ -43,4 +41,7 @@ public class JobDescriptor {
 
     @Column
     public long timeRunning;
+
+    @Column
+    public int attempts;
 }

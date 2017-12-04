@@ -1,7 +1,9 @@
 package com.wali.kraken.services;
 
 import com.wali.kraken.config.Constants;
+import com.wali.kraken.config.PreStartupDependencyConfig;
 import com.wali.kraken.domain.CandidateValueList;
+import com.wali.kraken.enumerations.OS;
 import com.wali.kraken.enumerations.RequestType;
 import com.wali.kraken.repositories.CandidateValueListRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,16 +17,18 @@ import java.io.File;
 public class CandidateValueListManager {
 
     private CandidateValueListRepository candidateValueListRepository;
+    private OS operatingSystem;
 
     @Autowired
-    public CandidateValueListManager(Environment environment, CandidateValueListRepository candidateValueListRepository) {
+    public CandidateValueListManager(Environment environment,
+                                     CandidateValueListRepository candidateValueListRepository) {
         this.candidateValueListRepository = candidateValueListRepository;
 
-        String baseDirectory = environment.getProperty("kraken.tmp-folder.base", "./kraken-temp-folder");
-        // Load default list
-        File defaultList = new File(baseDirectory +
-                "/" + Constants.CANDIDATE_VALUE_LIST_DIRECTORY + "/"
-                + "default-list.txt");
+        String baseDirectory = environment.getProperty("kraken.tmp-folder.base");
+        File defaultList  = new File(baseDirectory + "/" +
+                        Constants.CANDIDATE_VALUE_LIST_DIRECTORY + "/" +
+                        "wpa" + "/"
+                        + "default-list.txt");
         if (defaultList.exists()) {
             CandidateValueList defaultWPAList = new CandidateValueList(defaultList.getAbsolutePath(), RequestType.WPA);
             candidateValueListRepository.save(defaultWPAList);
