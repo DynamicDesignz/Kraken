@@ -16,6 +16,7 @@ public class LinearPasswordReader implements CandidateValueListReader {
 
     public LinearPasswordReader(String candidateValueListPath) throws IOException{
         scanner = new Scanner(new File(candidateValueListPath));
+        currentLine = 1;
     }
 
     @Override

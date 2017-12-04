@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("server")
-@RestController("/password-list")
+@RestController
 public class CandidateValueListController {
 
     private CandidateValueListRepository candidateValueListRepository;

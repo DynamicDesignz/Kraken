@@ -12,20 +12,20 @@ import java.util.List;
 /**
  * Created by Wali on 10/12/2017.
  */
-public interface CrackRequestRepository extends JpaRepository<CrackRequestDescriptor, Long> {
+public interface CrackRequestDescriptorRepository extends JpaRepository<CrackRequestDescriptor, Long> {
 
-    @Query("SELECT COUNT(r) FROM CrackRequest r WHERE r.processingStatus = 'PENDING'")
+    @Query("SELECT COUNT(r) FROM CrackRequestDescriptor r WHERE r.processingStatus = 'PENDING'")
     long getPendingCount();
 
-    @Query("SELECT COUNT(r) FROM CrackRequest r WHERE r.processingStatus = 'RUNNING'")
+    @Query("SELECT COUNT(r) FROM CrackRequestDescriptor r WHERE r.processingStatus = 'RUNNING'")
     long getRunningCount();
 
-    @Query("SELECT r FROM CrackRequest r WHERE r.processingStatus = 'PENDING'")
+    @Query("SELECT r FROM CrackRequestDescriptor r WHERE r.processingStatus = 'PENDING'")
     Page<CrackRequestDescriptor> getFirstPendingRequest(Pageable page);
 
-    @Query("SELECT r FROM CrackRequest r WHERE r.processingStatus = 'PENDING'")
+    @Query("SELECT r FROM CrackRequestDescriptor r WHERE r.processingStatus = 'PENDING'")
     List<CrackRequestDescriptor> getAllPending();
 
-    @Query("SELECT r FROM CrackRequest r WHERE r.processingStatus = 'COMPLETED'")
+    @Query("SELECT r FROM CrackRequestDescriptor r WHERE r.processingStatus = 'COMPLETE'")
     List<CrackRequestDescriptor> getAllCompleted();
 }

@@ -16,6 +16,7 @@ import org.gearman.GearmanServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -30,7 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Profile("server")
-@Component
+@Service("ProcessingCore")
+@DependsOn({"ServerManager"})
 public class ProcessingCore {
 
     private int MAX_CONCURRENT_CRACK_REQUESTS;
@@ -42,10 +46,11 @@ public class ProcessingCore {
 
     private JobDescriptorRepository jobDescriptorRepository;
     private CandidateValueListDescriptorRepository candidateValueListDescriptorRepository;
-    private CrackRequestRepository crackRequestRepository;
+    private CrackRequestDescriptorRepository crackRequestDescriptorRepository;
     private FileReaderRepository fileReaderRepository;
 
     private CandidateValueListRepository candidateValueListRepository;
+    private WorkerRepository workerRepository;
 
     private Logger log = LoggerFactory.getLogger(ProcessingCore.class);
     private ServiceFunctions serviceFunctions;
@@ -55,19 +60,21 @@ public class ProcessingCore {
     @Autowired
     public ProcessingCore(
             Environment environment,
+            WorkerRepository workerRepository,
             CandidateValueListRepository candidateValueListRepository,
             JobDescriptorRepository jobDescriptorRepository,
             FileReaderRepository fileReaderRepository,
             CandidateValueListDescriptorRepository candidateValueListDescriptorRepository,
-            CrackRequestRepository crackRequestRepository,
-            ServiceFunctions serviceFunctions) {
+            CrackRequestDescriptorRepository crackRequestDescriptorRepository,
+            ServiceFunctions serviceFunctions) throws UnknownHostException {
 
         this.jobDescriptorRepository = jobDescriptorRepository;
         this.candidateValueListDescriptorRepository = candidateValueListDescriptorRepository;
-        this.crackRequestRepository = crackRequestRepository;
+        this.crackRequestDescriptorRepository = crackRequestDescriptorRepository;
         this.fileReaderRepository = fileReaderRepository;
 
         this.candidateValueListRepository = candidateValueListRepository;
+        this.workerRepository = workerRepository;
         this.serviceFunctions = serviceFunctions;
 
         MAX_CONCURRENT_CRACK_REQUESTS = Integer.parseInt(
@@ -85,11 +92,13 @@ public class ProcessingCore {
         // Initialize Gearman Variables
         int gearmanServerPort = Integer.parseInt(
                 environment.getProperty("gearman.server.port", "4730"));
+        InetAddress ip = InetAddress.getLocalHost();
         Gearman gearman = Gearman.createGearman();
         client = gearman.createGearmanClient();
-        GearmanServer server = gearman.createGearmanServer("127.0.0.1", gearmanServerPort);
+        GearmanServer server = gearman.createGearmanServer(ip.getHostAddress(), gearmanServerPort);
         client.addServer(server);
     }
+
 
     /**
      * Primary Core Function of Kraken
@@ -172,8 +181,8 @@ public class ProcessingCore {
         // Section 3 : Requests
 
         // Sending New PasswordRequests
-        if (crackRequestRepository.getRunningCount() < MAX_CONCURRENT_CRACK_REQUESTS &&
-                crackRequestRepository.getPendingCount() > 0) {
+        if (crackRequestDescriptorRepository.getRunningCount() < MAX_CONCURRENT_CRACK_REQUESTS &&
+                crackRequestDescriptorRepository.getPendingCount() > 0) {
 
             CrackRequestDescriptor crackRequestDescriptor = processNextRequest();
 
@@ -196,7 +205,7 @@ public class ProcessingCore {
 
         // Get next pending crack request
         Page<CrackRequestDescriptor> passwordRequestPage =
-                crackRequestRepository.getFirstPendingRequest(new PageRequest(0, 1));
+                crackRequestDescriptorRepository.getFirstPendingRequest(new PageRequest(0, 1));
         CrackRequestDescriptor crackRequestDescriptor;
         if (passwordRequestPage.getTotalElements() < 1)
             throw new RuntimeException("Failed to get a crack request to process");
@@ -220,7 +229,7 @@ public class ProcessingCore {
                 crackRequestDescriptor.setProcessingStatus(ProcessingStatus.ERROR);
             }
 
-            log.info("Added Password List with name {} as a descriptor for request number {}",
+            log.info("Added Candidate Value List with name {} as a descriptor for Crack Request Descriptor {}",
                         passwordListName, crackRequestDescriptor.getQueueNumber());
             candidateValueListDescriptors.add(candidateValueListDescriptor);
         }
@@ -229,7 +238,7 @@ public class ProcessingCore {
         if(candidateValueListDescriptors.stream().noneMatch(candidateValueListDescriptor ->
                 candidateValueListDescriptor.getProcessingStatus() == ProcessingStatus.PENDING)){
             crackRequestDescriptor.setProcessingStatus(ProcessingStatus.ERROR);
-            crackRequestRepository.save(crackRequestDescriptor);
+            crackRequestDescriptorRepository.save(crackRequestDescriptor);
             return null;
         }
 
@@ -240,7 +249,7 @@ public class ProcessingCore {
         crackRequestDescriptor.setProcessingStatus(ProcessingStatus.RUNNING);
 
         // Save Crack Request
-        crackRequestRepository.save(crackRequestDescriptor);
+        crackRequestDescriptorRepository.save(crackRequestDescriptor);
 
         log.info("Success! Crack Request {} added to running queue", crackRequestDescriptor.getQueueNumber());
         return crackRequestDescriptor;
@@ -309,7 +318,9 @@ public class ProcessingCore {
         candidateValueListDescriptor.setProcessingStatus(ProcessingStatus.RUNNING);
         candidateValueListDescriptorRepository.save(candidateValueListDescriptor);
 
-        log.info("Success! Candidate Value List Descriptor {} added to running queue", candidateValueListDescriptor.getQueueNumber());
+        log.info("Success! Candidate Value List Descriptor {} for Crack Request {} added to running queue",
+                candidateValueListDescriptor.getQueueNumber(),
+                candidateValueListDescriptor.getCrackRequestDescriptor().getQueueNumber());
         return candidateValueListDescriptor;
     }
 
@@ -326,10 +337,10 @@ public class ProcessingCore {
             jobDescriptor = jobDescriptorPage.getContent().get(0);
 
         // Get Reader
-        String key = jobDescriptor.getCandidateValueListDescriptor().getCrackRequestDescriptor().getQueueNumber() +
+        String fileReaderKeys = jobDescriptor.getCandidateValueListDescriptor().getCrackRequestDescriptor().getQueueNumber() +
                 "-" +
                 jobDescriptor.getCandidateValueListDescriptor().getQueueNumber();
-        CandidateValueListReader reader = fileReaderRepository.get(key);
+        CandidateValueListReader reader = fileReaderRepository.get(fileReaderKeys);
         if(reader == null){
             log.error("Reader for this job doesn't exist! Marking Job Descriptor as ERROR!");
             jobDescriptor.setProcessingStatus(ProcessingStatus.ERROR);
@@ -341,7 +352,7 @@ public class ProcessingCore {
         if(jobDescriptor.getColonDelimitedCandidateValues() == null){
             ArrayList<String> candidateValues = reader.readCandidateValuesIntoJob(jobDescriptor);
             if (candidateValues == null) {
-                log.error("Failed to get values from password list. Marking Job Descriptor as ERROR!");
+                log.error("Failed to get values from Candidate Value List. Marking Job Descriptor as ERROR!");
                 jobDescriptor.setProcessingStatus(ProcessingStatus.ERROR);
                 jobDescriptorRepository.save(jobDescriptor);
                 return null;
@@ -367,9 +378,25 @@ public class ProcessingCore {
                 jobDescriptor.getCandidateValueListDescriptor().getCrackRequestDescriptor().getPasswordCaptureInBase64(),
                 jobDescriptor.getColonDelimitedCandidateValues(),
                 candidateValueList.getCharacterSet());
-//
-//        // submit job
-//        client.submitJob();
+
+        // Generate Job Key
+        String jobDescriptorKey = serviceFunctions.generateJobDescriptorKey(jobDescriptor);
+
+        // Serialize Job
+        byte[] jobAsBytes = serviceFunctions.serializeJob(job);
+        if(jobAsBytes == null){
+            log.error("Failed to serialize job with id {} into byte array", jobDescriptorKey);
+            jobDescriptor.setProcessingStatus(ProcessingStatus.ERROR);
+            jobDescriptorRepository.save(jobDescriptor);
+            return null;
+        }
+
+        // Submit job
+        client.submitJob(
+                jobDescriptor.getCandidateValueListDescriptor().getCrackRequestDescriptor().getRequestType().name(),
+                jobAsBytes,
+                jobDescriptorKey,
+                new JobCallBack(this, serviceFunctions));
 
         // Set Descriptor Status to running
         jobDescriptor.setProcessingStatus(ProcessingStatus.RUNNING);
@@ -377,8 +404,7 @@ public class ProcessingCore {
         // Save Job Descriptor
         jobDescriptorRepository.save(jobDescriptor);
 
-
-        log.info("Success! JobDescriptor {} added to running queue", jobDescriptor.getQueueNumber());
+        log.info("Success! Job Descriptor with id {} added", jobDescriptorKey);
         return jobDescriptor;
     }
 
@@ -389,7 +415,7 @@ public class ProcessingCore {
         JobDescriptor jobDescriptor = jobDescriptorRepository.findOne(jobDescriptorQueueNumber);
         if (jobDescriptor == null)
             throw new RuntimeException("Could not find job!");
-        if(!Objects.equals(jobDescriptor.getProcessingStatus(), ProcessingStatus.COMPLETE))
+        if(Objects.equals(jobDescriptor.getProcessingStatus(), ProcessingStatus.COMPLETE))
             return;
         if (!Objects.equals(jobDescriptor.getProcessingStatus(), ProcessingStatus.RUNNING))
             throw new RuntimeException("Job was not in running status");
@@ -405,14 +431,14 @@ public class ProcessingCore {
     }
 
     private void markCandidateValueListAsComplete(long candidateValueListDescriptorQueueNumber) {
-        log.info("Marking PasswordList with id {} as complete", candidateValueListDescriptorQueueNumber);
+        log.info("Marking Candidate Value List Descriptor with id {} as complete", candidateValueListDescriptorQueueNumber);
 
         // Find
         CandidateValueListDescriptor candidateValueListDescriptor =
                 candidateValueListDescriptorRepository.findOne(candidateValueListDescriptorQueueNumber);
         if (candidateValueListDescriptor == null)
             throw new RuntimeException("Could not find PasswordList!");
-        if(!Objects.equals(candidateValueListDescriptor.getProcessingStatus(), ProcessingStatus.COMPLETE))
+        if(Objects.equals(candidateValueListDescriptor.getProcessingStatus(), ProcessingStatus.COMPLETE))
             return;
         if (!Objects.equals(candidateValueListDescriptor.getProcessingStatus(), ProcessingStatus.RUNNING))
             throw new RuntimeException("List was not in running status");
@@ -432,10 +458,10 @@ public class ProcessingCore {
 
     private void markRequestAsComplete(long requestQueueNumber) {
         log.info("Marking Request with id {} as complete", requestQueueNumber);
-        CrackRequestDescriptor crackRequestDescriptor = crackRequestRepository.findOne(requestQueueNumber);
+        CrackRequestDescriptor crackRequestDescriptor = crackRequestDescriptorRepository.findOne(requestQueueNumber);
         if (crackRequestDescriptor == null)
             throw new RuntimeException("Could not find PasswordRequest!");
-        if(!Objects.equals(crackRequestDescriptor.getProcessingStatus(), ProcessingStatus.COMPLETE))
+        if(Objects.equals(crackRequestDescriptor.getProcessingStatus(), ProcessingStatus.COMPLETE))
             return;
         if (!Objects.equals(crackRequestDescriptor.getProcessingStatus(), ProcessingStatus.RUNNING))
             throw new RuntimeException("Request was not in running status");
@@ -444,7 +470,7 @@ public class ProcessingCore {
         crackRequestDescriptor.setProcessingStatus(ProcessingStatus.COMPLETE);
 
         // Save Descriptor
-        crackRequestRepository.save(crackRequestDescriptor);
+        crackRequestDescriptorRepository.save(crackRequestDescriptor);
     }
 
     public synchronized void recoverJob(String jobDescriptorKey) {
@@ -472,12 +498,22 @@ public class ProcessingCore {
 
     }
 
+    public synchronized void additionalWorker(){
+        log.info("Attempting to add additional worker");
+        try {
+            processNextJob();
+        }
+        catch (RuntimeException e){
+            log.info("No pending jobs to execute for additional worker");
+        }
+    }
+
     public synchronized void valueFound(String jobDescriptorKey, String value){
         log.info("Value found in Job with with key {}...", jobDescriptorKey);
 
         long[] ids = serviceFunctions.getJobDescriptorFromKey(jobDescriptorKey);
 
-        CrackRequestDescriptor crackRequestDescriptor = crackRequestRepository.findOne(ids[0]);
+        CrackRequestDescriptor crackRequestDescriptor = crackRequestDescriptorRepository.findOne(ids[0]);
         if(crackRequestDescriptor == null)
             throw new RuntimeException("Found Value for a crack request that doesn't exist");
 
@@ -499,7 +535,7 @@ public class ProcessingCore {
 
         // Set Value
         crackRequestDescriptor.setResult(value);
-        crackRequestRepository.save(crackRequestDescriptor);
+        crackRequestDescriptorRepository.save(crackRequestDescriptor);
     }
 
 

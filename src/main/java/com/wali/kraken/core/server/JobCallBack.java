@@ -7,9 +7,6 @@ import org.gearman.GearmanJobEventCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -45,7 +42,7 @@ public class JobCallBack implements GearmanJobEventCallback<String> {
                 id = serviceFunctions.getJobDescriptorFromKey(jobDescriptorKey);
 
                 // Parse Reply
-                Reply reply = getReplyFromGearman(gearmanJobEvent);
+                Reply reply = serviceFunctions.deserializeReply(gearmanJobEvent.getData());
                 if (reply == null) {
                     logger.error("Could not process data from call back for job with id {}", jobDescriptorKey);
 
@@ -102,34 +99,5 @@ public class JobCallBack implements GearmanJobEventCallback<String> {
             case GEARMAN_JOB_STATUS:
                 break;
         }
-    }
-
-    private Reply getReplyFromGearman(GearmanJobEvent gearmanJobEvent) {
-        Reply reply = null;
-        ByteArrayInputStream bis = null;
-        ObjectInputStream ois = null;
-        try {
-            bis = new ByteArrayInputStream(gearmanJobEvent.getData());
-            ois = new ObjectInputStream(bis);
-            reply = (Reply) ois.readObject();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (bis != null) {
-                try {
-                    bis.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (ois != null) {
-                try {
-                    ois.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return reply;
     }
 }

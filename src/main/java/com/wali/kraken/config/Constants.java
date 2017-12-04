@@ -37,4 +37,8 @@ public class Constants {
 
     public static final String CANDIDATE_VALUE_LIST_DIRECTORY = "candidate-value-lists";
 
+    /**
+     * Gearman Version
+     */
+    public static String GearmanVersion = "0.6.6";
 }
