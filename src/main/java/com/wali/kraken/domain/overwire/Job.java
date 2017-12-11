@@ -3,6 +3,7 @@ package com.wali.kraken.domain.overwire;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import javax.persistence.Column;
 import java.io.Serializable;
 import java.util.ArrayList;
 
@@ -16,7 +17,9 @@ public class Job implements Serializable {
 
     private long crackRequestQueueNumber;
 
-    private String matchValueInBase64;
+    private String toMatchValueInBase64;
+
+    private String metadataMap;
 
     private String colonDelimitedCandidateValues;
 

@@ -59,7 +59,7 @@ public class CrackRequestController {
         byte[] passwordCaptureFileBytes;
         try {
             passwordCaptureFileBytes = passwordCaptureFile.getBytes();
-            serviceFunctions.testForValidCrack(passwordCaptureFileBytes, ssid);
+            serviceFunctions.testForValidCrack(passwordCaptureFileBytes, "server-temp-folder",  ssid);
         } catch (IOException e) {
             throw new KrakenException(HttpStatus.BAD_REQUEST, e.getMessage());
         }

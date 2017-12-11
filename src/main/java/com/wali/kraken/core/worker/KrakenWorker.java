@@ -1,5 +1,6 @@
 package com.wali.kraken.core.worker;
 
+import com.wali.kraken.config.PreStartupDependencyConfig;
 import com.wali.kraken.enumerations.RequestType;
 import com.wali.kraken.services.ServiceFunctions;
 import org.gearman.Gearman;
@@ -24,21 +25,23 @@ public class KrakenWorker {
     private ServiceFunctions serviceFunctions;
 
     @Autowired
-    public KrakenWorker(Environment environment, ServiceFunctions serviceFunctions) throws UnknownHostException {
+    public KrakenWorker(Environment environment,
+                        ServiceFunctions serviceFunctions,
+                        PreStartupDependencyConfig preStartupDependencyConfig) throws UnknownHostException {
         int gearmanServerPort = Integer.parseInt(
                 environment.getProperty("gearman.server.port", "4730"));
-
-        InetAddress ip = InetAddress.getLocalHost();
+        String gearmanServerHost = environment.getProperty("gearman.server.host", "127.0.0.1");
 
         Gearman gearman = Gearman.createGearman();
-        GearmanServer server = gearman.createGearmanServer(ip.getHostAddress(), gearmanServerPort);
+        GearmanServer server = gearman.createGearmanServer(gearmanServerHost, gearmanServerPort);
         GearmanWorker worker = gearman.createGearmanWorker();
 
         for(RequestType requestType : RequestType.values()){
             if(requestType == RequestType.WPA)
-                worker.addFunction(requestType.name(), new WPAWorker(serviceFunctions));
+                worker.addFunction(requestType.name(), new WPAWorker(serviceFunctions, environment, preStartupDependencyConfig));
         }
 
+        InetAddress ip = InetAddress.getLocalHost();
         worker.setClientID("kraken-worker-" + ip.getHostAddress());
         worker.setReconnectPeriod(5, TimeUnit.SECONDS);
         worker.addServer(server);

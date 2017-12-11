@@ -16,6 +16,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 @Service
 public class ServiceFunctions {
@@ -38,21 +39,24 @@ public class ServiceFunctions {
      * Tests if file is a valid password capture file that can be processed by AirCrackNG
      *
      * @param passwordCaptureFileInBytes Password capture file (usually a .cap) in bytes
+     * @param folderPrefix               Folder prefix when creating temp file
      * @param SSID                       The SSID we are looking for (this file may have many SSID hashes captured)
      * @throws IOException throws IOException if
      */
-    public void testForValidCrack(byte[] passwordCaptureFileInBytes, String SSID) throws IOException {
+    public void testForValidCrack(byte[] passwordCaptureFileInBytes, String folderPrefix, String SSID) throws IOException {
         // If byte array is null, return empty File
         if (passwordCaptureFileInBytes == null)
             throw new RuntimeException("Empty File");
 
         // Create a Path
-        Path tempFilePath = Paths.get(environment.getProperty("kraken.tmp-folder.base"), "temp.cap");
+        Path tempFilePath = Paths.get(environment.getProperty("kraken.tmp-folder.base"), folderPrefix, "temp.cap");
+
+        // Create Directory if not exists
+        if (!Files.exists(tempFilePath))
+            Files.createDirectories(tempFilePath.getParent());
 
         // Write the file out to a temporary location
-        FileOutputStream fOut = new FileOutputStream(tempFilePath.toFile());
-        fOut.write(passwordCaptureFileInBytes);
-        fOut.close();
+        Files.write(tempFilePath, passwordCaptureFileInBytes, StandardOpenOption.CREATE);
 
         // Use Process Builder to check if the file is valid
         ProcessBuilder pb = new ProcessBuilder(aircrackInvocationString, tempFilePath.toString(), "-b", SSID);
@@ -87,12 +91,13 @@ public class ServiceFunctions {
     public String sendTextCommandToGearmanServer(String command) {
         int gearmanServerPort = Integer.parseInt(
                 environment.getProperty("gearman.server.port", "4730"));
+        String gearmanServerHost = environment.getProperty("gearman.server.host", "127.0.0.1");
         Socket pingSocket = null;
         PrintWriter out = null;
         BufferedReader in = null;
         String ret = "";
         try {
-            pingSocket = new Socket("127.0.0.1", gearmanServerPort);
+            pingSocket = new Socket(gearmanServerHost, gearmanServerPort);
             out = new PrintWriter(pingSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(pingSocket.getInputStream()));
             out.println(command);

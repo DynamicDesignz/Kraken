@@ -78,9 +78,9 @@ public class ProcessingCore {
         this.serviceFunctions = serviceFunctions;
 
         MAX_CONCURRENT_CRACK_REQUESTS = Integer.parseInt(
-                environment.getProperty("kraken.concurrent.passwordrequests", "1"));
+                environment.getProperty("kraken.concurrent.crack_requests", "1"));
         MAX_CONCURRENT_CANDIDATE_VALUE_LISTS = Integer.parseInt(
-                environment.getProperty("kraken.concurrent.passwordlists", "1"));
+                environment.getProperty("kraken.concurrent.candidate_value_lists", "1"));
         MAX_JOB_RETRIES = Integer.parseInt(
                 environment.getProperty("kraken.core.job-retry", "3"));
 
@@ -92,10 +92,10 @@ public class ProcessingCore {
         // Initialize Gearman Variables
         int gearmanServerPort = Integer.parseInt(
                 environment.getProperty("gearman.server.port", "4730"));
-        InetAddress ip = InetAddress.getLocalHost();
+        String gearmanServerHost = environment.getProperty("gearman.server.host", "127.0.0.1");
         Gearman gearman = Gearman.createGearman();
         client = gearman.createGearmanClient();
-        GearmanServer server = gearman.createGearmanServer(ip.getHostAddress(), gearmanServerPort);
+        GearmanServer server = gearman.createGearmanServer(gearmanServerHost, gearmanServerPort);
         client.addServer(server);
     }
 
@@ -376,6 +376,7 @@ public class ProcessingCore {
                 jobDescriptor.getCandidateValueListDescriptor().getQueueNumber(),
                 jobDescriptor.getCandidateValueListDescriptor().getCrackRequestDescriptor().getQueueNumber(),
                 jobDescriptor.getCandidateValueListDescriptor().getCrackRequestDescriptor().getPasswordCaptureInBase64(),
+                jobDescriptor.getCandidateValueListDescriptor().getCrackRequestDescriptor().getMetadataMap(),
                 jobDescriptor.getColonDelimitedCandidateValues(),
                 candidateValueList.getCharacterSet());
 
