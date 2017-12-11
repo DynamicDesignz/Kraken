@@ -7,7 +7,6 @@ import com.wali.kraken.domain.overwire.Job;
 import com.wali.kraken.domain.overwire.Reply;
 import com.wali.kraken.enumerations.RequestType;
 import com.wali.kraken.services.ServiceFunctions;
-import com.wali.kraken.utils.KrakenException;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.gearman.GearmanFunction;
 import org.gearman.GearmanFunctionCallback;
