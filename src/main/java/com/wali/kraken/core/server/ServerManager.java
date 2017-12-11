@@ -17,7 +17,7 @@ public class ServerManager {
     @Autowired
     public ServerManager(Environment environment) throws Exception{
         int gearmanServerPort = Integer.parseInt(
-                environment.getProperty("gearman.server.port", "4730"));
+                environment.getProperty("kraken.server.gearman-server-port", "4730"));
         Class classToLoad = Class.forName ("org.gearman.impl.Main");
         Method[] methods = classToLoad.getMethods();
         Object[] params = new String[4];

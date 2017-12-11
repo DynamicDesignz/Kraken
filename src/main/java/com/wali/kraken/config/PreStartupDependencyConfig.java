@@ -11,7 +11,9 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
 import javax.annotation.PreDestroy;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -47,14 +49,16 @@ public class PreStartupDependencyConfig {
         Files.createDirectories(Paths.get(temporaryFolderBase));
 
         // Get OS
-        if(System.getProperty("os.name").startsWith("Windows"))
+        boolean isWindows = System.getProperty("os.name").startsWith("Windows");
+        if(isWindows)
             // System is windows
             setupAircrackForWindows();
         else
             setupAircrackForLinux();
 
         // Copy default wpa password list
-        copyFileToTemporaryDirectory(Constants.CANDIDATE_VALUE_LIST_DIRECTORY + "/" + "wpa" + "/", "default-list.txt");
+        copyFileToTemporaryDirectory(Constants.CANDIDATE_VALUE_LIST_DIRECTORY + "/" + "wpa" + "/",
+                "default-list.txt", isWindows);
     }
 
     @PreDestroy
@@ -74,11 +78,15 @@ public class PreStartupDependencyConfig {
         });
     }
 
-    private void copyFileToTemporaryDirectory(String resourcePath, String filename) throws IOException {
+    private void copyFileToTemporaryDirectory(String resourcePath, String filename, boolean isWindows) throws IOException {
         Resource resource = resourceLoader.getResource("classpath:" + resourcePath + filename);
         InputStream resourceInputStream = resource.getInputStream();
         byte[] fileAsArray = ByteStreams.toByteArray(resourceInputStream);
-        File dir = new File(temporaryFolderBase + "\\" + resourcePath);
+        File dir;
+        if(isWindows)
+            dir = new File(temporaryFolderBase + "\\" + resourcePath);
+        else
+            dir = new File(temporaryFolderBase + "/" + resourcePath);
         if (dir.exists()) dir.delete();
         dir.mkdirs();
         Files.write(Paths.get(dir.getAbsolutePath(), filename), fileAsArray);
@@ -117,16 +125,16 @@ public class PreStartupDependencyConfig {
         boolean is64Bit = (System.getenv("ProgramFiles(x86)") != null);
         if (is64Bit) {
             // 64 Bit Files
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "aircrack-ng-avx.exe");
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "aircrack-ng-avx2.exe");
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygcrypto-1.0.0.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cyggcc_s-seh-1.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygpcre-1.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygsqlite3-0.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygssp-0.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygstdc++-6.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygwin1.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygz.dll");
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "aircrack-ng-avx.exe", true);
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "aircrack-ng-avx2.exe",true);
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygcrypto-1.0.0.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cyggcc_s-seh-1.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygpcre-1.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygsqlite3-0.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygssp-0.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygstdc++-6.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygwin1.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/64bit/", "cygz.dll",true);
 
             // Set Aircrack Invocation String
             aircrackInvocationString =
@@ -134,16 +142,16 @@ public class PreStartupDependencyConfig {
 
         } else {
             // 32 Bit Files
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "aircrack-ng-avx.exe");
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "aircrack-ng-avx2.exe");
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygcrypto-1.0.0.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cyggcc_s-1.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygpcre-1.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygsqlite3-0.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygssp-0.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygstdc++-6.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygwin1.dll");
-            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygz.dll");
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "aircrack-ng-avx.exe",true);
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "aircrack-ng-avx2.exe",true);
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygcrypto-1.0.0.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cyggcc_s-1.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygpcre-1.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygsqlite3-0.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygssp-0.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygstdc++-6.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygwin1.dll",true);
+            copyFileToTemporaryDirectory("aircrack/windows/32bit/", "cygz.dll",true);
 
             aircrackInvocationString =
                     temporaryFolderBase + "\\" + "aircrack" + "\\" + "windows" + "\\" + "32bit" + "\\" + "aircrack-ng-avx.exe";

@@ -88,16 +88,13 @@ public class ServiceFunctions {
      * <p>
      * If String is empty, then failed
      */
-    public String sendTextCommandToGearmanServer(String command) {
-        int gearmanServerPort = Integer.parseInt(
-                environment.getProperty("gearman.server.port", "4730"));
-        String gearmanServerHost = environment.getProperty("gearman.server.host", "127.0.0.1");
-        Socket pingSocket = null;
+    public String sendTextCommandToGearmanServer(String host, int port, String command) {
+        Socket pingSocket;
         PrintWriter out = null;
         BufferedReader in = null;
         String ret = "";
         try {
-            pingSocket = new Socket(gearmanServerHost, gearmanServerPort);
+            pingSocket = new Socket(host, port);
             out = new PrintWriter(pingSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(pingSocket.getInputStream()));
             out.println(command);

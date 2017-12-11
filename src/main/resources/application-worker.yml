@@ -1,0 +1,5 @@
+# Worker Properties
+kraken:
+    worker:
+        gearman-host: 127.0.0.1
+        gearman-port: 4730

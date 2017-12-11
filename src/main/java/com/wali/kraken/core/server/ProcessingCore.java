@@ -1,11 +1,11 @@
 package com.wali.kraken.core.server;
 
-import com.wali.kraken.domain.file.readers.CandidateValueListReader;
-import com.wali.kraken.domain.file.readers.LinearPasswordReader;
 import com.wali.kraken.domain.CandidateValueList;
 import com.wali.kraken.domain.core.CandidateValueListDescriptor;
 import com.wali.kraken.domain.core.CrackRequestDescriptor;
 import com.wali.kraken.domain.core.JobDescriptor;
+import com.wali.kraken.domain.file.readers.CandidateValueListReader;
+import com.wali.kraken.domain.file.readers.LinearPasswordReader;
 import com.wali.kraken.domain.overwire.Job;
 import com.wali.kraken.enumerations.ProcessingStatus;
 import com.wali.kraken.repositories.*;
@@ -21,10 +21,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,14 +76,14 @@ public class ProcessingCore {
         this.serviceFunctions = serviceFunctions;
 
         MAX_CONCURRENT_CRACK_REQUESTS = Integer.parseInt(
-                environment.getProperty("kraken.concurrent.crack_requests", "1"));
+                environment.getProperty("kraken.server.core.concurrent-crack-requests", "1"));
         MAX_CONCURRENT_CANDIDATE_VALUE_LISTS = Integer.parseInt(
-                environment.getProperty("kraken.concurrent.candidate_value_lists", "1"));
+                environment.getProperty("kraken.server.core.concurrent-candidate-value-lists", "1"));
         MAX_JOB_RETRIES = Integer.parseInt(
-                environment.getProperty("kraken.core.job-retry", "3"));
+                environment.getProperty("kraken.server.core.job-retry", "3"));
 
         JOB_SIZE = Long.parseLong(
-                environment.getProperty("kraken.core.job-size", "2000000"));
+                environment.getProperty("kraken.server.core.job-size", "2000000"));
 
         executorService = Executors.newSingleThreadExecutor();
 

@@ -8,12 +8,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.awt.print.Pageable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -37,14 +37,19 @@ public class WorkerManager {
 
     private WorkerRepository workerRepository;
 
+    private int gearmanServerPort;
+
     @Autowired
     public WorkerManager(ServiceFunctions serviceFunctions,
                          ProcessingCore processingCore,
-                         WorkerRepository workerRepository){
+                         WorkerRepository workerRepository,
+                         Environment environment){
         this.workerRepository = workerRepository;
         this.serviceFunctions = serviceFunctions;
         this.executorService = Executors.newSingleThreadExecutor();
         this.processingCore = processingCore;
+        this.gearmanServerPort = Integer.parseInt(
+                environment.getProperty("kraken.server.gearman-server-port", "4730"));
     }
 
     public WorkerManager(int workerCount) {
@@ -54,7 +59,7 @@ public class WorkerManager {
     @Scheduled(fixedDelay = 5000)
     public void getWorkerCount(){
         // Get Gearman Status
-        String output = serviceFunctions.sendTextCommandToGearmanServer("status");
+        String output = serviceFunctions.sendTextCommandToGearmanServer("127.0.0.1", gearmanServerPort,"status");
 
         // If no output, it means we have run into a fatal exception
         if(output == null)

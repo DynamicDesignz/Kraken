@@ -1,0 +1,9 @@
+# Server Properties
+kraken:
+    server:
+        core:
+            concurrent-crack-requests: 1
+            concurrent-candidate-value-lists: 1
+            job-retry: 3
+            job-size: 2000000
+        gearman-server-port: 4730
