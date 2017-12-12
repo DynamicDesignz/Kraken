@@ -1,9 +1,7 @@
 package com.wali.kraken.services;
 
 import com.wali.kraken.config.Constants;
-import com.wali.kraken.config.PreStartupDependencyConfig;
 import com.wali.kraken.domain.CandidateValueList;
-import com.wali.kraken.enumerations.OS;
 import com.wali.kraken.enumerations.RequestType;
 import com.wali.kraken.repositories.CandidateValueListRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +15,6 @@ import java.io.File;
 public class CandidateValueListManager {
 
     private CandidateValueListRepository candidateValueListRepository;
-    private OS operatingSystem;
 
     @Autowired
     public CandidateValueListManager(Environment environment,
