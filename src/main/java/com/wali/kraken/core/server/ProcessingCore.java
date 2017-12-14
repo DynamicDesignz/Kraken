@@ -32,13 +32,11 @@ import java.util.concurrent.Executors;
 
 @Profile("server")
 @Service("ProcessingCore")
-@DependsOn({"ServerManager"})
 public class ProcessingCore {
 
     private int MAX_CONCURRENT_CRACK_REQUESTS;
     private int MAX_CONCURRENT_CANDIDATE_VALUE_LISTS;
     private int MAX_JOB_RETRIES;
-    private int MAXJobNumberCount = 1; // TODO REMOVE!!!!!
 
     private long JOB_SIZE;
 
@@ -87,7 +85,7 @@ public class ProcessingCore {
 
         executorService = Executors.newSingleThreadExecutor();
 
-        // Initialize Gearman Variables
+        // Initialize Gearman Server
         int gearmanServerPort = Integer.parseInt(
                 environment.getProperty("gearman.server.port", "4730"));
         String gearmanServerHost = environment.getProperty("gearman.server.host", "127.0.0.1");
@@ -125,7 +123,7 @@ public class ProcessingCore {
 
         // Sending New Jobs
         if (crackRequestQueueNumber != null && candidateValueListDescriptorQueueNumber != null &&
-                jobDescriptorRepository.getRunningCount() < MAXJobNumberCount &&
+                jobDescriptorRepository.getRunningCount() < workerRepository.getWorkerCount() &&
                 jobDescriptorRepository.getPendingCount() > 0) {
 
             JobDescriptor jobDescriptor = processNextJob();

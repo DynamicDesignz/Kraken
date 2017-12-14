@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
  */
 @Service("WorkerManager")
 @Profile("server")
-@DependsOn({"ServerManager"})
+@DependsOn({"ProcessingCore"})
 public class WorkerManager {
 
     private volatile int workerCount;
