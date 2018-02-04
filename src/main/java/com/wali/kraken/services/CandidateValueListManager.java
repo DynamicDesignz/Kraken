@@ -2,7 +2,7 @@ package com.wali.kraken.services;
 
 import com.wali.kraken.config.Constants;
 import com.wali.kraken.domain.CandidateValueList;
-import com.wali.kraken.enumerations.RequestType;
+import com.wali.kraken.domain.enumerations.RequestType;
 import com.wali.kraken.repositories.CandidateValueListRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;

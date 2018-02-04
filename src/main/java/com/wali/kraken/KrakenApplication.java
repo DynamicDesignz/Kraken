@@ -15,9 +15,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class KrakenApplication {
 
     public static void main(String[] args) {
-//        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
-//        ctx.register(PreStartupDependencyConfig.class);
-//        ctx.registerShutdownHook();
         SpringApplication.run(KrakenApplication.class, args);
     }
 }

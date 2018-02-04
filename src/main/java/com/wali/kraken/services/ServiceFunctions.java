@@ -43,7 +43,7 @@ public class ServiceFunctions {
      * @param SSID                       The SSID we are looking for (this file may have many SSID hashes captured)
      * @throws IOException throws IOException if
      */
-    public void testForValidCrack(byte[] passwordCaptureFileInBytes, String folderPrefix, String SSID) throws IOException {
+    synchronized public void  testForValidCrack(byte[] passwordCaptureFileInBytes, String folderPrefix, String SSID) throws IOException {
         // If byte array is null, return empty File
         if (passwordCaptureFileInBytes == null)
             throw new RuntimeException("Empty File");

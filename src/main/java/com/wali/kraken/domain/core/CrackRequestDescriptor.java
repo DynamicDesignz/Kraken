@@ -1,7 +1,7 @@
 package com.wali.kraken.domain.core;
 
-import com.wali.kraken.enumerations.ProcessingStatus;
-import com.wali.kraken.enumerations.RequestType;
+import com.wali.kraken.domain.enumerations.ProcessingStatus;
+import com.wali.kraken.domain.enumerations.RequestType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,7 +1,7 @@
 package com.wali.kraken.core.worker;
 
 import com.wali.kraken.config.PreStartupDependencyConfig;
-import com.wali.kraken.enumerations.RequestType;
+import com.wali.kraken.domain.enumerations.RequestType;
 import com.wali.kraken.services.ServiceFunctions;
 import org.gearman.Gearman;
 import org.gearman.GearmanServer;

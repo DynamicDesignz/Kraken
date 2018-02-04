@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wali.kraken.config.PreStartupDependencyConfig;
 import com.wali.kraken.domain.overwire.Job;
 import com.wali.kraken.domain.overwire.Reply;
-import com.wali.kraken.enumerations.RequestType;
+import com.wali.kraken.domain.enumerations.RequestType;
 import com.wali.kraken.services.ServiceFunctions;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.gearman.GearmanFunction;

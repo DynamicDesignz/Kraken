@@ -7,7 +7,7 @@ import com.wali.kraken.domain.core.JobDescriptor;
 import com.wali.kraken.domain.file.readers.CandidateValueListReader;
 import com.wali.kraken.domain.file.readers.LinearPasswordReader;
 import com.wali.kraken.domain.overwire.Job;
-import com.wali.kraken.enumerations.ProcessingStatus;
+import com.wali.kraken.domain.enumerations.ProcessingStatus;
 import com.wali.kraken.repositories.*;
 import com.wali.kraken.services.ServiceFunctions;
 import org.gearman.Gearman;
@@ -16,13 +16,13 @@ import org.gearman.GearmanServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +62,7 @@ public class ProcessingCore {
             FileReaderRepository fileReaderRepository,
             CandidateValueListDescriptorRepository candidateValueListDescriptorRepository,
             CrackRequestDescriptorRepository crackRequestDescriptorRepository,
-            ServiceFunctions serviceFunctions) throws UnknownHostException {
+            ServiceFunctions serviceFunctions) throws IOException {
 
         this.jobDescriptorRepository = jobDescriptorRepository;
         this.candidateValueListDescriptorRepository = candidateValueListDescriptorRepository;
@@ -93,6 +93,9 @@ public class ProcessingCore {
         client = gearman.createGearmanClient();
         GearmanServer server = gearman.createGearmanServer(gearmanServerHost, gearmanServerPort);
         client.addServer(server);
+
+        // Run Gearman Server
+        gearman.startGearmanServer();
     }
 
 

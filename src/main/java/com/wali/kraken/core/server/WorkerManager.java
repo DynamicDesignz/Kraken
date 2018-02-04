@@ -67,6 +67,9 @@ public class WorkerManager {
 
         String[] workers = output.split("\t");
 
+        if(workers.length < 3)
+            throw new RuntimeException("Gearman Server unexpectedly shutdown/unreachable");
+
         int newWorkerCount = Integer.parseInt(workers[3]);
         int difference = newWorkerCount - workerCount;
         if( difference  > 0 ){

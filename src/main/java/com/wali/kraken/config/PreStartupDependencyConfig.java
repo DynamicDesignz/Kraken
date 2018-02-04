@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.util.FileSystemUtils;
 
 import javax.annotation.PreDestroy;
 import java.io.*;
@@ -58,54 +59,9 @@ public class PreStartupDependencyConfig {
 
     @PreDestroy
     public void deleteTemporaryDirectory() throws IOException {
-        Files.walkFileTree(Paths.get(temporaryFolderBase), new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-    }
-
-    private void copyFileToTemporaryDirectory(String resourcePath, String filename, boolean isWindows) throws IOException {
-        Resource resource = resourceLoader.getResource("classpath:" + resourcePath + filename);
-        InputStream resourceInputStream = resource.getInputStream();
-        byte[] fileAsArray = ByteStreams.toByteArray(resourceInputStream);
-        File dir;
-        if(isWindows)
-            dir = new File(temporaryFolderBase + "\\" + resourcePath);
-        else
-            dir = new File(temporaryFolderBase + "/" + resourcePath);
-        if (dir.exists()) dir.delete();
-        dir.mkdirs();
-        Files.write(Paths.get(dir.getAbsolutePath(), filename), fileAsArray);
-    }
-
-    private String executeCommandInConsole(long timeout,
-                                           TimeUnit timeUnit,
-                                           String... commands) throws InterruptedException, IOException {
-        ProcessBuilder pb = new ProcessBuilder(commands);
-        Process process = pb.start();
-        if(timeout != 0 && timeUnit != null)
-            process.waitFor(timeout, timeUnit);
-        BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
-        StringBuilder sb = new StringBuilder("");
-        while ((line = br.readLine()) != null){
-            sb.append(line).append("\n");
-        }
-        br.close();
-        return sb.toString();
-    }
-
-    private String executeCommandInConsole(String... commands) throws IOException, InterruptedException {
-        return executeCommandInConsole(0,null , commands);
+        File file = new File(temporaryFolderBase);
+        FileSystemUtils.deleteRecursively(file);
+        file.delete();
     }
 
     private void setupAircrackForLinux() throws IOException, InterruptedException {
@@ -146,7 +102,6 @@ public class PreStartupDependencyConfig {
         if(Objects.equals(testForAPT,""))
             throw new RuntimeException("Lixux Operating System does not support apt");
 
-
         boolean is64Bit = executeCommandInConsole("uname", "-i").contains("x86_64");
         if(is64Bit){
             copyFileToTemporaryDirectory("aircrack/linux/deb/64bit/", "aircrack-ng_1.1-6_amd64.deb", false);
@@ -174,7 +129,6 @@ public class PreStartupDependencyConfig {
             if(Objects.equals(aptInstallion, ""))
                 throw new RuntimeException("Could not perform a apt-get -f install");
         }
-
 
         // Test Run Aircrack
         testAircrack = executeCommandInConsole(aircrackInvocationString);
@@ -225,5 +179,40 @@ public class PreStartupDependencyConfig {
             throw new RuntimeException("Aircrack was setup but failed invocation test!");
     }
 
+    private void copyFileToTemporaryDirectory(String resourcePath, String filename, boolean isWindows) throws IOException {
+        Resource resource = resourceLoader.getResource("classpath:" + resourcePath + filename);
+        InputStream resourceInputStream = resource.getInputStream();
+        byte[] fileAsArray = ByteStreams.toByteArray(resourceInputStream);
+        File dir;
+        if(isWindows)
+            dir = new File(temporaryFolderBase + "\\" + resourcePath);
+        else
+            dir = new File(temporaryFolderBase + "/" + resourcePath);
+        if (dir.exists())
+            dir.delete();
+        dir.mkdirs();
+        Files.write(Paths.get(dir.getAbsolutePath(), filename), fileAsArray);
+    }
+
+    private String executeCommandInConsole(long timeout,
+                                           TimeUnit timeUnit,
+                                           String... commands) throws InterruptedException, IOException {
+        ProcessBuilder pb = new ProcessBuilder(commands);
+        Process process = pb.start();
+        if(timeout != 0 && timeUnit != null)
+            process.waitFor(timeout, timeUnit);
+        BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        StringBuilder sb = new StringBuilder("");
+        while ((line = br.readLine()) != null){
+            sb.append(line).append("\n");
+        }
+        br.close();
+        return sb.toString();
+    }
+
+    private String executeCommandInConsole(String... commands) throws IOException, InterruptedException {
+        return executeCommandInConsole(0,null , commands);
+    }
 
 }
