@@ -1,12 +1,54 @@
-# Base Application Properties
+# ===================================================================
+# Spring Boot configuration.
+#
+# DEPLOYMENT ENVIRONMENT : LOCAL (Default)
+#
+# ===================================================================
 
-kraken:
-    tmp-folder:
-        base: kraken-temp-folder
 
-server:
-    port: 8080
+# Spring Properties
 
 spring:
+    application:
+        name: Kraken
     profiles:
-        active: server,worker
+      active: local
+    jackson:
+        serialization.indent_output: true
+    datasource:
+        type: com.zaxxer.hikari.HikariDataSource
+        url: jdbc:h2:file:./build/h2db/db/FastFinanceBox;DB_CLOSE_DELAY=-1
+        username: sa
+        password:
+        hikari:
+            data-source-properties:
+                cachePrepStmts: true
+                prepStmtCacheSize: 250
+                prepStmtCacheSqlLimit: 2048
+                useServerPrepStmts: true
+    jpa:
+        database-platform: org.hibernate.dialect.H2Dialect
+        database: H2
+        hibernate:
+            ddl-auto: create-drop
+            naming:
+                physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        properties:
+            hibernate.cache.use_second_level_cache: false
+
+# Server Properties
+server:
+  port: 5000
+
+# Application Properties
+
+application:
+      async:
+          core-pool-size : 5
+          max-pool-size : 5
+          queue-capacity: 100
+          thread-name: Kraken-Async-Thread
+      security:
+          jwt-token-signing-key: helloworld
+          jwt-token-validity-in-milliseconds: 8000000
