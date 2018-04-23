@@ -17,7 +17,7 @@ spring:
         serialization.indent_output: true
     datasource:
         type: com.zaxxer.hikari.HikariDataSource
-        url: jdbc:h2:file:./build/h2db/db/FastFinanceBox;DB_CLOSE_DELAY=-1
+        url: jdbc:h2:file:./build/h2db/db/Kraken;DB_CLOSE_DELAY=-1
         username: sa
         password:
         hikari:
@@ -52,3 +52,11 @@ application:
       security:
           jwt-token-signing-key: helloworld
           jwt-token-validity-in-milliseconds: 8000000
+
+amazon:
+    region: us-west-1
+    aws:
+        accesskey: AKIAIQJNQXXI4UQCEN6Q
+        secretkey: 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
+    s3:
+        bucketname: kraken-storage-unit

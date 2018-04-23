@@ -1,6 +1,6 @@
 buildscript {
 	ext {
-		springBootVersion = '1.5.7.RELEASE'
+		springBootVersion = '2.0.0.RELEASE'
 	}
 	repositories {
 		mavenCentral()
@@ -13,6 +13,7 @@ buildscript {
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
 
 group = 'com.wali'
 version = '0.0.1-SNAPSHOT'
@@ -22,31 +23,61 @@ repositories {
 	mavenCentral()
 }
 
-configurations {
-    compile.exclude group:'ch.qos.logback'
-}
+// Un-managed Library Versions
+def jjwt_version = '0.7.0'
+def zolando = '0.22.0'
 
 dependencies {
-	compile('org.springframework.boot:spring-boot-starter')
+	// Spring Web
+	compile("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
 
-    // Spring Web
-    compile("org.springframework.boot:spring-boot-starter-web")
+	// Actuator
+	compile('org.springframework.boot:spring-boot-starter-actuator')
 
-    // Spring JPA
-    compile 'org.springframework.data:spring-data-jpa'
+	// Security
+	compile('org.springframework.boot:spring-boot-starter-security')
+	compile "org.springframework.security:spring-security-data"
 
-    // H2
-    compile("com.h2database:h2")
+	// Validation
+	compile('org.springframework.boot:spring-boot-starter-validation')
 
-	// Guava
-	compile group: 'com.google.guava', name: 'guava', version: '23.0'
+	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
 
-    // Hibernate
-    compile 'org.hibernate:hibernate-core:5.2.11.Final'
+	// Persistence
+	compile "org.hibernate:hibernate-core"
+	compile "org.hibernate:hibernate-jcache"
+	compile "org.hibernate:hibernate-entitymanager"
+	compile "org.hibernate:hibernate-envers"
+	compile "org.springframework.boot:spring-boot-starter-data-jpa"
+	compile "com.zaxxer:HikariCP"
+	compile "com.h2database:h2"
+	compile "org.hibernate:hibernate-ehcache"
+	compile 'mysql:mysql-connector-java'
 
-	// Gearman
-	compile files ('dependencies/jar/java-gearman-service-0.6.6.jar')
+	// Cache
+	compile "org.ehcache:ehcache"
 
+	// Lombok
 	compileOnly('org.projectlombok:lombok')
+
+	// JWT
+	compile "io.jsonwebtoken:jjwt:${jjwt_version}"
+
+	// Jackson
+	compile "com.fasterxml.jackson.datatype:jackson-datatype-json-org"
+	compile "com.fasterxml.jackson.datatype:jackson-datatype-hppc"
+	compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+	compile "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5"
+	compile "com.fasterxml.jackson.core:jackson-annotations"
+	compile "com.fasterxml.jackson.core:jackson-databind"
+	compile "com.fasterxml.jackson.module:jackson-module-afterburner"
+
+	// Exceptions
+	compile "org.zalando:problem-spring-web:${zolando}"
+
+	// File Upload
+	compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.213'
+
 	testCompile('org.springframework.boot:spring-boot-starter-test')
+	testCompile('org.springframework.security:spring-security-test')
 }

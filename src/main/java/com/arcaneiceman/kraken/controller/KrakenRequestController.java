@@ -36,7 +36,7 @@ public class KrakenRequestController {
 //            throw new KrakenException(HttpStatus.BAD_REQUEST, e.getMessage());
 //        }
 
-
+        return null;
 
     }
 }
