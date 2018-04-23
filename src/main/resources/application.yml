@@ -56,7 +56,6 @@ application:
 amazon:
     region: us-west-1
     aws:
-        accesskey: AKIAIQJNQXXI4UQCEN6Q
-        secretkey: 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
+
     s3:
         bucketname: kraken-storage-unit
