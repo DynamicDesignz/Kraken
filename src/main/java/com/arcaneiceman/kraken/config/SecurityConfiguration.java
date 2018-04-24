@@ -116,7 +116,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 // Allow All
                 .antMatchers("/api/account/**").permitAll()
                 // User Only
-                .antMatchers("/api/**").hasAnyAuthority(AuthoritiesConstants.ADMIN, AuthoritiesConstants.USER)
+                .antMatchers("/api/**").hasAnyAuthority(AuthoritiesConstants.ADMIN, AuthoritiesConstants.CONSUMER)
                 // Admin Only
                 .antMatchers("/management/**").hasAuthority(AuthoritiesConstants.ADMIN)
                 .and()

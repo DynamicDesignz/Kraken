@@ -61,21 +61,16 @@ public class UserService {
     }
 
 
-    public AccountIO.Register.Response createNewUser(AccountIO.Register.Request requestDTO, boolean isAdmin) {
+    public AccountIO.Register.Response createNewUser(AccountIO.Register.Request requestDTO) {
         User newUser = new User();
-        Authority authority;
-        if (isAdmin)
-            authority = authorityRepository.findById(AuthoritiesConstants.ADMIN)
-                    .orElseThrow(() -> new RuntimeException("Could not find " + AuthoritiesConstants.ADMIN));
-        else
-            authority = authorityRepository.findById(AuthoritiesConstants.USER)
-                    .orElseThrow(() -> new RuntimeException("Could not find " + AuthoritiesConstants.USER));
-
+        Authority authority = authorityRepository.findById(AuthoritiesConstants.CONSUMER)
+                .orElseThrow(() -> new RuntimeException("Could not find " + AuthoritiesConstants.CONSUMER));
         Set<Authority> authorities = new HashSet<>();
         String encryptedPassword = passwordEncoder.encode(requestDTO.getPassword());
         // new user gets initially a generated password
         newUser.setLogin(requestDTO.getLogin());
         newUser.setPassword(encryptedPassword);
+        newUser.setActive(false);
         authorities.add(authority);
         newUser.setAuthorities(authorities);
         userRepository.save(newUser);
@@ -128,7 +123,7 @@ public class UserService {
 //        return userRepository.findUserByAuthoritiesContaining(pageable, Constants.ANONYMOUS_USER).map(UserDTO::new);
 //    }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
 //    public Optional<User> getUserWithAuthoritiesByLogin(String login) {
 //        return userRepository.findUserWithAuthoritiesByLogin(login);
 //    }

@@ -31,6 +31,7 @@ public class AccountController {
     }
 
     @Validated
+    @Secured(AuthoritiesConstants.CONSUMER)
     @PostMapping(value = "/register")
     public ResponseEntity<AccountIO.Register.Response> register(@Valid @RequestBody AccountIO.Register.Request requestDTO) {
         log.debug("REST request to register user account");
@@ -47,7 +48,7 @@ public class AccountController {
 
     @Validated
     @PostMapping(value = "/refresh")
-    @Secured({AuthoritiesConstants.USER, AuthoritiesConstants.ADMIN})
+    @Secured({AuthoritiesConstants.CONSUMER, AuthoritiesConstants.ADMIN})
     public ResponseEntity<AccountIO.Refresh.Response> refresh() {
         log.debug("REST request to refresh token");
         return ResponseEntity.ok(accountService.refresh());
@@ -55,7 +56,7 @@ public class AccountController {
 
     @Validated
     @PostMapping(value = "/logout")
-    @Secured({AuthoritiesConstants.USER, AuthoritiesConstants.ADMIN})
+    @Secured({AuthoritiesConstants.CONSUMER, AuthoritiesConstants.ADMIN})
     public ResponseEntity<Void> logout(HttpServletRequest httpServletRequest) {
         log.debug("REST request to logout");
         accountService.logout(httpServletRequest);
@@ -80,7 +81,7 @@ public class AccountController {
 
     @Validated
     @PostMapping(value = "/change_password")
-    @Secured({AuthoritiesConstants.USER, AuthoritiesConstants.ADMIN})
+    @Secured({AuthoritiesConstants.CONSUMER, AuthoritiesConstants.ADMIN})
     public ResponseEntity<Void> changePassword(@Valid @RequestBody AccountIO.ChangePassword.Request requestDTO) {
         log.debug("REST request to change password");
         userService.changePassword(requestDTO);

@@ -54,6 +54,9 @@ public class User implements Serializable {
     @Column(name = "reset_date")
     private Instant resetDate = null;
 
+    @Column
+    private Boolean active;
+
     @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
