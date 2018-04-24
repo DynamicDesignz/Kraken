@@ -20,11 +20,13 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "tracked_job")
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-public class TrackedJob extends MtoOPermissionEntity<CrackRequest> {
+public class TrackedJob extends MtoOPermissionEntity<KrakenRequest> {
 
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "uuid2")
+    @Column(columnDefinition = "BINARY(16)")
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
     @Column
     private String candidateValueListName;

@@ -18,7 +18,6 @@ public class KrakenRequestController {
 
     private static Logger log = LoggerFactory.getLogger(KrakenRequestController.class);
 
-
     @PostMapping(value = "/wpa")
     public ResponseEntity<KrakenRequestController> createWPARequest(
             @RequestParam(value = "packet-capture-file") MultipartFile passwordCaptureFile,
@@ -35,6 +34,12 @@ public class KrakenRequestController {
 //        }
 
         return null;
+
+    }
+
+    @PostMapping(value = "{id}/report-job")
+    public void reportJob(@RequestParam String jobId){
+
 
     }
 }

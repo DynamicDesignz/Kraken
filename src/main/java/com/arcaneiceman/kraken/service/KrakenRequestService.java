@@ -1,4 +1,4 @@
 package com.arcaneiceman.kraken.service;
 
-public class JobService {
+public class KrakenRequestService {
 }
