@@ -1,19 +1,23 @@
 package com.arcaneiceman.kraken.service;
 
-import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.arcaneiceman.kraken.domain.CandidateValueList;
+import com.arcaneiceman.kraken.domain.embedded.JobDelimter;
 import com.arcaneiceman.kraken.repository.CandidateValueListRepository;
+import com.ttt.eru.libs.fileupload.configuration.AmazonS3Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.InputStream;
+import javax.annotation.PostConstruct;
+import java.io.*;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -23,51 +27,97 @@ import java.util.stream.Collectors;
 @Transactional
 public class CandidateValueListService {
 
-    @Value("${amazon.s3.bucketname}")
-    private String bucketName;
+    private static Logger log = LoggerFactory.getLogger(CandidateValueListService.class);
 
-    private final String listPrefix = "/candidate-value-lists";
+    @Value("${application.candidate-value-list-settings.folder-prefix}")
+    private String storagePath;
 
-    private final AmazonS3 amazonS3;
+    @Value("${application.candidate-value-list-settings.job-size}")
+    private String jobSize;
 
+    private final AmazonS3Configuration amazonS3Configuration;
     private final CandidateValueListRepository candidateValueListRepository;
-    private final ListJobDescriptorService listJobDescriptorService;
 
-    public CandidateValueListService(AmazonS3 amazonS3,
-                                     CandidateValueListRepository candidateValueListRepository,
-                                     ListJobDescriptorService listJobDescriptorService) {
-        this.amazonS3 = amazonS3;
+    public CandidateValueListService(AmazonS3Configuration amazonS3Configuration,
+                                     CandidateValueListRepository candidateValueListRepository) {
+        this.amazonS3Configuration = amazonS3Configuration;
         this.candidateValueListRepository = candidateValueListRepository;
-        this.listJobDescriptorService = listJobDescriptorService;
+
+    }
+
+    @PostConstruct
+    public void checkValues() throws IOException {
+        if (storagePath == null || storagePath.isEmpty())
+            throw new RuntimeException("Application Candidate Value List Updater : Storage Folder Not Specified ");
+        if (jobSize == null || jobSize.isEmpty())
+            throw new RuntimeException("Application Candidate Value List Updater : Job Size Not Specified");
+        checkS3Bucket();
+    }
+
+    @Scheduled(cron = "0 0 1 * * ?")
+    public void checkS3Bucket() throws IOException {
+        log.info("Fetching Candidate Value Lists From Amazon S3...");
+        List<String> krakenList = candidateValueListRepository.findAll().stream()
+                .map(CandidateValueList::getName)
+                .collect(Collectors.toList());
+        List<String> s3List = amazonS3Configuration.generateClient().listObjects(
+                amazonS3Configuration.getAmazonS3BucketName(), storagePath).getObjectSummaries().stream()
+                .map(S3ObjectSummary::getKey)
+                .collect(Collectors.toList());
+
+        // Remove Lists that dont exist any more
+        for (String existingList : krakenList)
+            if (!s3List.contains(existingList))
+                candidateValueListRepository.deleteById(existingList);
+
+        // Add Lists that are now present
+        for (String s3ListItem : s3List)
+            if (!krakenList.contains(s3ListItem)) {
+
+                // Get Input Stream
+                S3Object s3Object = amazonS3Configuration.generateClient().getObject(
+                        amazonS3Configuration.getAmazonS3BucketName(), s3ListItem);
+                InputStream fileStream = new BufferedInputStream(s3Object.getObjectContent());
+                InputStreamReader decoder = new InputStreamReader(fileStream, "UTF-8");
+                BufferedReader buffered = new BufferedReader(decoder);
+
+                // Initialize Variables
+                String thisLine;
+                int numOfLinesRead = 0;
+                long jobStartMarker = 0;
+                long jobOffsetMarker = 0;
+                Set<JobDelimter> jobDelimiterSet = new HashSet<>();
+
+                // While there are lines to be read...
+                while ((thisLine = buffered.readLine()) != null) {
+                    // Increment number of lines and the jobOffsetMarker
+                    numOfLinesRead++;
+                    jobOffsetMarker = jobOffsetMarker + thisLine.length() + 1;
+
+                    // If job size limit is reached...
+                    if (numOfLinesRead == Integer.parseInt(jobSize)) {
+                        // Add job to delimiter set
+                        jobDelimiterSet.add(new JobDelimter(jobStartMarker, jobOffsetMarker));
+                        // Reset the jobStartMarker
+                        jobStartMarker = jobOffsetMarker;
+                        // Reset number of lines read
+                        numOfLinesRead = 0;
+                    }
+                }
+
+                // If there are left over lines that werent put into the list, put them now
+                if (numOfLinesRead > 0)
+                    jobDelimiterSet.add(new JobDelimter(jobStartMarker, jobOffsetMarker));
+
+                // Save Candidate Value list
+                candidateValueListRepository.save(new CandidateValueList(s3ListItem.substring(s3ListItem.lastIndexOf("/") + 1), null, jobDelimiterSet));
+            }
+        log.info("Candidate Value Lists Fetch From Amazon S3 Complete!");
     }
 
     public CandidateValueList get(String name) {
         return candidateValueListRepository.findById(name).orElseThrow(() -> new RuntimeException("Not Found"));
     }
 
-    @Scheduled(cron = "0 0 1 * * ?")
-    public void checkS3Bucket() {
-        List<String> krakenList = candidateValueListRepository.findAll().stream()
-                .map(CandidateValueList::getName)
-                .collect(Collectors.toList());
-        List<String> s3List = amazonS3.listObjects(bucketName, listPrefix).getObjectSummaries().stream()
-                .map(S3ObjectSummary::getKey)
-                .collect(Collectors.toList());
 
-        // Deletion Phase
-        for (String krakenListItem : krakenList)
-            if (!s3List.contains(krakenListItem))
-                listJobDescriptorService.deleteByOwner(candidateValueListRepository.getOne(krakenListItem));
-
-        // Addition Phase
-        for (String s3ListItem : s3List)
-            if (!krakenList.contains(s3ListItem)){
-                S3Object s3Object = amazonS3.getObject(bucketName, s3ListItem);
-                InputStream fileStream = new BufferedInputStream(s3Object.getObjectContent());
-//        GZIPInputStream gzipStream = new GZIPInputStream(fileStream);
-//        InputStreamReader decoder = new InputStreamReader(gzipStream, "UTF-8");
-//        BufferedReader buffered = new BufferedReader(decoder);
-            }
-
-    }
 }

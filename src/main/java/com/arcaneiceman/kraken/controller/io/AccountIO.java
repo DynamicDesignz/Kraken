@@ -47,6 +47,12 @@ public class AccountIO {
             @NotBlank
             @Size(min = PASSWORD_MIN_LENGTH, max = PASSWORD_MAX_LENGTH)
             private String password;
+
+            //@NotBlank
+            private String firstName;
+
+            //@NotBlank
+            private String lastName;
         }
 
         @AllArgsConstructor
@@ -131,6 +137,10 @@ public class AccountIO {
         @NoArgsConstructor
         @AllArgsConstructor
         public static class Request {
+
+            @NotBlank
+            @Size(min = PASSWORD_MIN_LENGTH, max = PASSWORD_MAX_LENGTH)
+            private String oldPassword;
 
             @NotBlank
             @Size(min = PASSWORD_MIN_LENGTH, max = PASSWORD_MAX_LENGTH)

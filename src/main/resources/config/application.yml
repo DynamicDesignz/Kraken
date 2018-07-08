@@ -26,6 +26,8 @@ spring:
                 prepStmtCacheSize: 250
                 prepStmtCacheSqlLimit: 2048
                 useServerPrepStmts: true
+        initialization-mode: embedded
+        platform: h2
     jpa:
         database-platform: org.hibernate.dialect.H2Dialect
         database: H2
@@ -35,7 +37,8 @@ spring:
                 physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
                 implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
         properties:
-            hibernate.cache.use_second_level_cache: false
+            hibernate.cache.use_second_level_cache: true
+            hibernate.cache.region.factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory
 
 # Server Properties
 server:
@@ -52,11 +55,16 @@ application:
       security:
           jwt-token-signing-key: helloworld
           jwt-token-validity-in-milliseconds: 8000000
+      candidate-value-list-settings:
+          folder-prefix: candidate-value-lists
+          job-size: 200000
+      kraken-request-settings:
+          folder-prefix: password-capture-storage
 
 amazon:
-    region: us-west-1
+    region: US_WEST_1
     aws:
         accesskey: AKIAIQJNQXXI4UQCEN6Q
-        secretkey: bwlymLocAeFtcB151Gr4a
+        secretkey: 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
     s3:
         bucketname: kraken-storage-unit

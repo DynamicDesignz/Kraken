@@ -1,28 +1,33 @@
 package com.arcaneiceman.kraken.security;
 
+import com.arcaneiceman.kraken.util.exceptions.SystemException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Optional;
+import static org.zalando.problem.Status.INTERNAL_SERVER_ERROR;
+
 
 /**
  * Created by Wali on 13/03/18.
  */
 public class SecurityUtils {
 
-    public static Optional<String> getCurrentUserLogin() {
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        return Optional.ofNullable(securityContext.getAuthentication())
-                .map(authentication -> {
-                    if (authentication.getPrincipal() instanceof UserDetails) {
-                        UserDetails springSecurityUser = (UserDetails) authentication.getPrincipal();
-                        return springSecurityUser.getUsername();
-                    } else if (authentication.getPrincipal() instanceof String) {
-                        return (String) authentication.getPrincipal();
-                    }
-                    return null;
-                });
+    public static String getCurrentUserLogin() {
+        try {
+            SecurityContext securityContext = SecurityContextHolder.getContext();
+            Authentication authentication = securityContext.getAuthentication();
+            if (authentication.getPrincipal() instanceof UserDetails) {
+                UserDetails springSecurityUser = (UserDetails) authentication.getPrincipal();
+                return springSecurityUser.getUsername();
+            } else if (authentication.getPrincipal() instanceof String)
+                return (String) authentication.getPrincipal();
+            else
+                throw new Exception();
+        } catch (Exception e) {
+            throw new SystemException(2342, "Failed to retrieve security context", INTERNAL_SERVER_ERROR);
+        }
     }
 
 

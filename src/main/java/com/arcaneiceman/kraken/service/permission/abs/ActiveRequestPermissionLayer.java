@@ -1,14 +1,14 @@
 package com.arcaneiceman.kraken.service.permission.abs;
 
-import com.arcaneiceman.kraken.domain.KrakenRequest;
+import com.arcaneiceman.kraken.domain.ActiveRequest;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.stereotype.Service;
 import org.zalando.problem.AbstractThrowableProblem;
 
 @Service
-public class CrackRequestPermissionLayer extends MtoOPermissionLayer<KrakenRequest, Long> {
+public class ActiveRequestPermissionLayer extends MtoOPermissionLayer<ActiveRequest, Long> {
 
-    public CrackRequestPermissionLayer(PagingAndSortingRepository<KrakenRequest, Long> pagingAndSortingRepository) {
+    public ActiveRequestPermissionLayer(PagingAndSortingRepository<ActiveRequest, Long> pagingAndSortingRepository) {
         super(pagingAndSortingRepository);
     }
 

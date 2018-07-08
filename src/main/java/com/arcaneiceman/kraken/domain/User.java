@@ -2,7 +2,6 @@ package com.arcaneiceman.kraken.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
-import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
@@ -12,8 +11,6 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * A user.
@@ -24,7 +21,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@Table(name = "user")
+@Table(name = "users")
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class User implements Serializable {
 
@@ -40,38 +37,38 @@ public class User implements Serializable {
     @Column(length = 50, unique = true, nullable = false)
     private String email;
 
+    @Column
+    private String firstName;
+
+    @Column
+    private String lastName;
+
     @JsonIgnore
     @NotNull
     @Size(min = 60, max = 60)
-    @Column(name = "password_hash",length = 60)
+    @Column(length = 60)
     private String password;
 
     @Size(max = 20)
-    @Column(name = "reset_key", length = 20)
+    @Column(length = 20)
     @JsonIgnore
     private String resetKey;
 
-    @Column(name = "reset_date")
+    @Column
     private Instant resetDate = null;
 
     @Column
     private Boolean active;
 
     @JsonIgnore
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_authority",
-            joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
-            inverseJoinColumns = {@JoinColumn(name = "authority_name", referencedColumnName = "name")})
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-    @BatchSize(size = 20)
-    private Set<Authority> authorities = new HashSet<>();
+    @Column
+    private String authority;
 
-    public String getLogin(){
+    public String getLogin() {
         return email;
     }
 
-    public void setLogin(String login){
+    public void setLogin(String login) {
         this.email = login;
     }
 

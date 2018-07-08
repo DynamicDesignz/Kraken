@@ -1,0 +1,108 @@
+package com.arcaneiceman.kraken.util.exceptions;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class ErrorCodesToMessage {
+
+    private static final Map<Integer, String> errorCodeMapping = new HashMap<>();
+
+    static {
+        errorCodeMapping.put(1, "Server Error, Please try again later");
+        errorCodeMapping.put(2, "Could not find user");
+        errorCodeMapping.put(3, "Could not find user");
+        errorCodeMapping.put(4, "User already exists");
+        errorCodeMapping.put(5, "Could not find account to delete");
+        errorCodeMapping.put(6, "Server Error, Please try again later");
+        //errorCodeMapping.put(7, "Could not find user");
+        errorCodeMapping.put(8, "You cannot update application at this time");
+        errorCodeMapping.put(9, "Missing CoApplicant");
+        errorCodeMapping.put(10, "Missing CoApplicant Type");
+        errorCodeMapping.put(11, "You cannot update application at this time (incorrect status)");
+        errorCodeMapping.put(12, "You cannot delete submitted application (incorrect status)");
+        errorCodeMapping.put(13, "You cannot resubmit a submitted application (incorrect status)");
+        errorCodeMapping.put(14, "You cannot submit an application without an applicant");
+        errorCodeMapping.put(15, "You cannot mark application in progress at this time (incorrect status)");
+        errorCodeMapping.put(16, "You cannot set a deal number to this application (incorrect status)");
+        errorCodeMapping.put(17, "You cannot conditionally approve application at this time (incorrect status)");
+        errorCodeMapping.put(18, "You cannot credit pending application at this time (incorrect status)");
+        //errorCodeMapping.put(19, );
+        errorCodeMapping.put(20, "Application not found");
+        errorCodeMapping.put(21, "You cannot decline application at this time (incorrect status)");
+        errorCodeMapping.put(22, "Application not found");
+        errorCodeMapping.put(23, "You cannot approve application at this time (incorrect status)");
+        errorCodeMapping.put(24, "No Payment Plan was submitted");
+        errorCodeMapping.put(25, "You cannot complete application at this time");
+        errorCodeMapping.put(26, "You cannot cancel application at this time");
+        errorCodeMapping.put(27, "Application not found");
+        errorCodeMapping.put(28, "Application not accessible at this time (incorrect status)");
+        errorCodeMapping.put(29, "You need to provide a company name and phone number");
+        errorCodeMapping.put(30, "You can only have one current address");
+        errorCodeMapping.put(31, "Current address is less than two years old. Please provide previous address");
+        errorCodeMapping.put(32, "Server Error, Please try again later");
+        errorCodeMapping.put(33, "Server Error, Please try again later");
+        errorCodeMapping.put(34, "Server Error, Please try again later");
+        errorCodeMapping.put(35, "Server Error, Please try again later");
+        errorCodeMapping.put(36, "Server Error, Please try again later");
+        errorCodeMapping.put(37, "Server Error, Please try again later");
+        errorCodeMapping.put(38, "Application not found");
+        errorCodeMapping.put(39, "You need to provide a first name, last name and phone number");
+        errorCodeMapping.put(40, "You can only have one current address");
+        errorCodeMapping.put(41, "Current address is less than two years old. Please provide previous address");
+        errorCodeMapping.put(42, "Message not found");
+        errorCodeMapping.put(43, "Note not found");
+        errorCodeMapping.put(44, "Unsupported Payment Plan");
+        errorCodeMapping.put(45, "Unsupported Payment Plan");
+        errorCodeMapping.put(46, "Unsupported Payment Plan");
+        errorCodeMapping.put(47, "Offered payment plan does not exist for this application");
+        errorCodeMapping.put(48, "Payment plan has missing required fields");
+        errorCodeMapping.put(49, "Payment plan has missing required fields");
+        errorCodeMapping.put(50, "Invalid Payment Plan Options");
+        errorCodeMapping.put(51, "Invalid Payment Plan Options");
+        errorCodeMapping.put(52, "Invalid Payment Plan Options");
+        errorCodeMapping.put(53, "Device not found");
+        errorCodeMapping.put(54, "Unsupported Payment Plan");
+        errorCodeMapping.put(55, "Unsupported Payment Plan");
+        errorCodeMapping.put(56, "Unsupported Payment Plan");
+        errorCodeMapping.put(57, "Offered payment plan does not exist for this application");
+        errorCodeMapping.put(58, "Payment plan has missing required fields");
+        errorCodeMapping.put(59, "Payment plan has missing required fields");
+        errorCodeMapping.put(60, "Invalid Payment Plan Options");
+        errorCodeMapping.put(61, "Invalid Payment Plan Options");
+        errorCodeMapping.put(62, "Invalid Payment Plan Options");
+        errorCodeMapping.put(63, "Server Error, Please try again later");
+        errorCodeMapping.put(64, "Invalid Payment Plan Options");
+        errorCodeMapping.put(65, "Invalid Payment Plan Options");
+        errorCodeMapping.put(66, "Invalid Payment Plan Options");
+        errorCodeMapping.put(67, "Offered payment plan does not exist for this application");
+        errorCodeMapping.put(68, "Payment plan has missing required fields");
+        errorCodeMapping.put(69, "Payment plan has missing required fields");
+        errorCodeMapping.put(70, "Unsupported Payment Plan");
+        errorCodeMapping.put(71, "Unsupported Payment Plan");
+        errorCodeMapping.put(72, "Unsupported Payment Plan");
+        errorCodeMapping.put(73, "Commercial Applicant not found");
+        errorCodeMapping.put(74, "Personal Applicant not found");
+        errorCodeMapping.put(75, "Server Error, Please try again later");
+        errorCodeMapping.put(76, "Unsupported Payment Plan");
+        errorCodeMapping.put(77, "Unsupported Payment Plan");
+        errorCodeMapping.put(78, "Unsupported Payment Plan");
+        errorCodeMapping.put(79, "Offered payment plan does not exist for this application");
+        errorCodeMapping.put(80, "Payment plan has missing required fields");
+        errorCodeMapping.put(81, "Payment plan has missing required fields");
+        errorCodeMapping.put(82, "Invalid Payment Plan Options");
+        errorCodeMapping.put(83, "Invalid Payment Plan Options");
+        errorCodeMapping.put(84, "Invalid Payment Plan Options");
+        errorCodeMapping.put(85, "Attachment not found");
+        errorCodeMapping.put(86, "Payment plan has missing required fields");
+        errorCodeMapping.put(87, "Payment plan has missing required fields");
+        errorCodeMapping.put(88, "Unsupported Payment Plan");
+        errorCodeMapping.put(89, "Unsupported Payment Plan");
+        errorCodeMapping.put(90, "Unsupported Payment Plan");
+        errorCodeMapping.put(91, "Offered payment plan does not exist for this application");
+        errorCodeMapping.put(92, "Payment plan has missing required fields");
+        errorCodeMapping.put(93, "Payment plan has missing required fields");
+        errorCodeMapping.put(94, "Old password is not correct");
+        errorCodeMapping.put(95, "Old password and new password cannot be the same");
+
+    }
+}
