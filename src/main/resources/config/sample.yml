@@ -42,7 +42,7 @@ spring:
 
 # Server Properties
 server:
-  port: 5000
+  port: { REPLACE }
 
 # Application Properties
 
@@ -53,18 +53,18 @@ application:
           queue-capacity: 100
           thread-name: Kraken-Async-Thread
       security:
-          jwt-token-signing-key: helloworld
+          jwt-token-signing-key: { REPLACE }
           jwt-token-validity-in-milliseconds: 8000000
       candidate-value-list-settings:
-          folder-prefix: candidate-value-lists
+          folder-prefix: { REPLACE }
           job-size: 200000
       kraken-request-settings:
-          folder-prefix: password-capture-storage
+          folder-prefix: { REPLACE }
 
 amazon:
-    region: US_WEST_1
+    region: { REPLACE }
     aws:
-        accesskey:
-        secretkey:
+        accesskey: { REPLACE }
+        secretkey: { REPLACE }
     s3:
-        bucketname: kraken-storage-unit
+        bucketname: { REPLACE }

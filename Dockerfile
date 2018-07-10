@@ -13,8 +13,8 @@ ARG JAR_FILE
 # Copy the jar file into the container
 COPY ${JAR_FILE} kraken.jar
 
-ENTRYPOINT ["java", "-jar", "kraken.jar"]
+ARG COMMANDLINEARGUMENTS
 
-RUN ls -l
+ENTRYPOINT ["java", "-jar", "kraken.jar"]
 
 EXPOSE 5000
