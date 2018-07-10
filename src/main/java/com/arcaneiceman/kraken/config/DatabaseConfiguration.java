@@ -44,6 +44,7 @@ public class DatabaseConfiguration implements ServletContextInitializer {
             ServletRegistration.Dynamic h2ConsoleServlet = servletContext.addServlet("H2Console", servlet);
             h2ConsoleServlet.addMapping("/h2-console/*");
             h2ConsoleServlet.setInitParameter("-properties", "src/main/resources/");
+            h2ConsoleServlet.setInitParameter("webAllowOthers","true");
             h2ConsoleServlet.setLoadOnStartup(1);
 
         } catch (ClassNotFoundException | LinkageError e) {
