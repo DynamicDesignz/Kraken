@@ -3,6 +3,9 @@ FROM openjdk:8-jre-alpine
 # Add a temporary volume
 VOLUME /tmp
 
+# Add Aircrack
+RUN apk update && apk add aircrack-ng && rm -rf /var/lib/apt/lists/*
+
 # Add a kraken user to run our application so that it doesn't need to run as root
 RUN adduser -D -s /bin/sh kraken
 WORKDIR /home/kraken
@@ -18,4 +21,3 @@ ARG COMMANDLINEARGUMENTS
 ENTRYPOINT ["java", "-jar", "kraken.jar"]
 
 EXPOSE 5000
-EXPOSE 8082
