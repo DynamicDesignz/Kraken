@@ -121,4 +121,14 @@ public class UserService {
         else
             return user;
     }
+
+    @Transactional(readOnly = true)
+    public User getUserOrThrow(String name) {
+        User user = userRepository.findUserByEmail(name);
+        if (user == null)
+            throw new SystemException(6, "Could not recover user from repository", NOT_FOUND);
+        else
+            return user;
+    }
+
 }

@@ -1,0 +1,79 @@
+# ===================================================================
+# Spring Boot configuration.
+#
+# DEPLOYMENT ENVIRONMENT : LOCAL (Default)
+#
+# ===================================================================
+
+
+# Spring Properties
+
+spring:
+    application:
+        name: Kraken
+    profiles:
+      active: local
+    jackson:
+        serialization.indent_output: true
+    datasource:
+        type: com.zaxxer.hikari.HikariDataSource
+        url: jdbc:h2:mem:testdb
+        username: { REPLACE }
+        password:
+        hikari:
+            data-source-properties:
+                cachePrepStmts: true
+                prepStmtCacheSize: 250
+                prepStmtCacheSqlLimit: 2048
+                useServerPrepStmts: true
+        initialization-mode: embedded
+        platform: h2
+    jpa:
+        database-platform: org.hibernate.dialect.H2Dialect
+        database: H2
+        hibernate:
+            ddl-auto: create-drop
+            naming:
+                physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        properties:
+            hibernate.cache.use_second_level_cache: true
+            hibernate.cache.region.factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory
+    h2:
+        console:
+            enabled: true
+            settings:
+                web-allow-others: true
+                trace: true
+
+
+
+# Server Properties
+server:
+  port: 5000
+
+
+# Application Properties
+
+application:
+      async:
+          core-pool-size : 5
+          max-pool-size : 5
+          queue-capacity: 100
+          thread-name: Kraken-Async-Thread
+      security:
+          jwt-token-signing-key: { REPLACE }
+          jwt-token-validity-in-milliseconds: 8000000
+      candidate-value-list-settings:
+          folder-prefix: { REPLACE }
+          job-size: 200000
+      kraken-request-settings:
+          folder-prefix: { REPLACE }
+
+amazon:
+    region: US_WEST_1
+    aws:
+        accesskey: { REPLACE }
+        secretkey: { REPLACE }
+    s3:
+        bucketname: kraken-storage-unit

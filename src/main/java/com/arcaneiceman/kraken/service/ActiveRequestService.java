@@ -11,6 +11,7 @@ import com.arcaneiceman.kraken.domain.enumerations.TrackedJobStatus;
 import com.arcaneiceman.kraken.repository.ActiveRequestRepository;
 import com.arcaneiceman.kraken.service.permission.abs.ActiveRequestPermissionLayer;
 import com.arcaneiceman.kraken.service.utils.FileUploadService;
+import com.arcaneiceman.kraken.util.ConsoleCommandUtil;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
 import com.ttt.eru.libs.fileupload.configuration.AmazonS3Configuration;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,18 +20,22 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
+import static com.arcaneiceman.kraken.config.Constants.*;
 import static org.zalando.problem.Status.BAD_REQUEST;
 import static org.zalando.problem.Status.INTERNAL_SERVER_ERROR;
 
 @Service
 @Transactional
 public class ActiveRequestService {
+
+    @Value("${application.kraken-request-settings.validation-prefix}")
+    private String passwordCaptureValidationPath;
 
     @Value("${application.kraken-request-settings.folder-prefix}")
     private String passwordCaptureStoragePath;
@@ -69,11 +74,33 @@ public class ActiveRequestService {
             throw new RuntimeException("Application Password Capture Fetcher : Storage Folder Not Specified");
     }
 
-    public ActiveRequest createWPAActiveRequest(MultipartFile passwordCaptureFile, String ssid, String[] candidateValueLists) {
+    public ActiveRequest createWPAActiveRequest(MultipartFile passwordCaptureFile,
+                                                String ssid,
+                                                String[] candidateValueLists) {
         User user = userService.getUserOrThrow();
         ActiveRequest activeRequest = activeRequestRepository.save(new ActiveRequest());
 
-        // TODO : Check if password file is valid
+        // Validate Capture file
+        Path tempFilePath = Paths.get(passwordCaptureValidationPath, UUID.randomUUID().toString());
+        try {
+            if (!Files.exists(tempFilePath))
+                Files.createDirectories(tempFilePath.getParent());
+            String response = ConsoleCommandUtil.executeCommandInConsole(
+                    "aircrack-ng", tempFilePath.toString(), "-b", ssid);
+            if (!response.contains(VALID_FILE))
+                if (response.contains(INVALID_SSID))
+                    throw new SystemException(2342, "SSID was not found in the capture", BAD_REQUEST);
+                else if (response.contains(INVALID_FILE))
+                    throw new SystemException(234, "Could not understand capture file", BAD_REQUEST);
+
+        } catch (IOException | InterruptedException ignored) {
+            throw new SystemException(21312, "Error Processing the capture file", INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                Files.deleteIfExists(tempFilePath);
+            } catch (IOException ignored) {
+            }
+        }
 
         // Upload passwordCaptureFile
         String fileKey = fileUploadService.uploadFile(passwordCaptureFile, passwordCaptureStoragePath + "/");

@@ -10,8 +10,7 @@ import java.util.List;
  * Created by Wali on 4/1/2018.
  */
 public class ActiveRequestIO {
-
-    public static class GetJob{
+    public static class GetJob {
 
         @Getter
         @NoArgsConstructor
@@ -26,5 +25,4 @@ public class ActiveRequestIO {
         }
 
     }
-
 }
