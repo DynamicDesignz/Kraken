@@ -1,12 +1,12 @@
 package com.arcaneiceman.kraken.domain;
 
 import com.arcaneiceman.kraken.domain.embedded.JobDelimter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
-import java.nio.charset.Charset;
 import java.util.Set;
 
 /**
@@ -23,11 +23,15 @@ import java.util.Set;
 public class CandidateValueList {
 
     @Id
+    private Long id;
+
+    @Column
     private String name;
 
     @Column
     private String charset;
 
+    @JsonIgnore
     @ElementCollection
     private Set<JobDelimter> jobDelimiterSet;
 }

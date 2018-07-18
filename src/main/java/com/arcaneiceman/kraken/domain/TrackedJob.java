@@ -30,6 +30,9 @@ public class TrackedJob extends MtoOPermissionEntity<ActiveRequest> {
     private String candidateValueListName;
 
     @Column
+    private String candidateValueListCharset;
+
+    @Column
     private Long startByte;
 
     @Column
@@ -38,4 +41,5 @@ public class TrackedJob extends MtoOPermissionEntity<ActiveRequest> {
     @Column
     @Enumerated(EnumType.STRING)
     private TrackedJobStatus status;
+
 }

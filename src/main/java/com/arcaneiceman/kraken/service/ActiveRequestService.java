@@ -127,7 +127,9 @@ public class ActiveRequestService {
                         .startByte(jobDelimter.getStartByte())
                         .endByte(jobDelimter.getEndByte())
                         .status(TrackedJobStatus.PENDING)
-                        .candidateValueListName(candidateValueListName).build();
+                        .candidateValueListName(candidateValueList.getName())
+                        .candidateValueListCharset(candidateValueList.getCharset())
+                        .build();
                 trackedJob.setOwner(activeRequest);
                 activeRequest.getTrackedJobSet().add(trackedJob);
             });
@@ -161,7 +163,7 @@ public class ActiveRequestService {
             getObjectRequest.setRange(trackedJob.getStartByte(), trackedJob.getEndByte());
             S3Object object = amazonS3Configuration.generateClient().getObject(getObjectRequest);
             InputStream fileStream = new BufferedInputStream(object.getObjectContent());
-            InputStreamReader decoder = new InputStreamReader(fileStream, "UTF-8");
+            InputStreamReader decoder = new InputStreamReader(fileStream, trackedJob.getCandidateValueListCharset());
             BufferedReader buffered = new BufferedReader(decoder);
 
             String thisLine;
