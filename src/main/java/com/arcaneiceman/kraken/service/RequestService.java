@@ -2,16 +2,11 @@ package com.arcaneiceman.kraken.service;
 
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
-import com.arcaneiceman.kraken.controller.io.ActiveRequestIO;
-import com.arcaneiceman.kraken.domain.ActiveRequest;
-import com.arcaneiceman.kraken.domain.CandidateValueList;
-import com.arcaneiceman.kraken.domain.TrackedJob;
-import com.arcaneiceman.kraken.domain.User;
+import com.arcaneiceman.kraken.controller.io.RequestIO;
+import com.arcaneiceman.kraken.domain.*;
 import com.arcaneiceman.kraken.domain.enumerations.TrackedJobStatus;
-import com.arcaneiceman.kraken.repository.ActiveRequestRepository;
-import com.arcaneiceman.kraken.service.permission.abs.ActiveRequestPermissionLayer;
-import com.arcaneiceman.kraken.service.utils.FileUploadService;
-import com.arcaneiceman.kraken.util.ConsoleCommandUtil;
+import com.arcaneiceman.kraken.repository.RequestRepository;
+import com.arcaneiceman.kraken.service.permission.abs.RequestPermissionLayer;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
 import com.ttt.eru.libs.fileupload.configuration.AmazonS3Configuration;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,22 +15,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 
-import static com.arcaneiceman.kraken.config.Constants.*;
 import static org.zalando.problem.Status.BAD_REQUEST;
 import static org.zalando.problem.Status.INTERNAL_SERVER_ERROR;
 
 @Service
 @Transactional
-public class ActiveRequestService {
-
-    @Value("${application.kraken-request-settings.validation-prefix}")
-    private String passwordCaptureValidationPath;
+public class RequestService {
 
     @Value("${application.kraken-request-settings.folder-prefix}")
     private String passwordCaptureStoragePath;
@@ -46,80 +37,64 @@ public class ActiveRequestService {
     private UserService userService;
     private AmazonS3Configuration amazonS3Configuration;
     private CandidateValueListService candidateValueListService;
-    private ActiveRequestPermissionLayer activeRequestPermissionLayer;
-    private ActiveRequestRepository activeRequestRepository;
-    private FileUploadService fileUploadService;
+    private RequestPermissionLayer requestPermissionLayer;
+    private RequestRepository requestRepository;
     private TrackedJobService trackedJobService;
+    private WPARequestDetailService wpaRequestDetailService;
 
-    public ActiveRequestService(UserService userService, AmazonS3Configuration amazonS3Configuration,
-                                CandidateValueListService candidateValueListService,
-                                ActiveRequestPermissionLayer activeRequestPermissionLayer,
-                                ActiveRequestRepository activeRequestRepository,
-                                FileUploadService fileUploadService,
-                                TrackedJobService trackedJobService) {
+    public RequestService(UserService userService,
+                          AmazonS3Configuration amazonS3Configuration,
+                          CandidateValueListService candidateValueListService,
+                          RequestPermissionLayer requestPermissionLayer,
+                          RequestRepository requestRepository,
+                          TrackedJobService trackedJobService,
+                          WPARequestDetailService wpaRequestDetailService) {
         this.userService = userService;
         this.amazonS3Configuration = amazonS3Configuration;
         this.candidateValueListService = candidateValueListService;
-        this.activeRequestPermissionLayer = activeRequestPermissionLayer;
-        this.activeRequestRepository = activeRequestRepository;
-        this.fileUploadService = fileUploadService;
+        this.requestPermissionLayer = requestPermissionLayer;
+        this.requestRepository = requestRepository;
         this.trackedJobService = trackedJobService;
+        this.wpaRequestDetailService = wpaRequestDetailService;
     }
 
     @PostConstruct
     public void checkValues() {
         if (candidateValueListStoragePath == null || candidateValueListStoragePath.isEmpty())
-            throw new RuntimeException("Application Candidate Value List Fetcher : Storage Folder Not Specified ");
+            throw new RuntimeException("Application Request Service - Candidate Value List S3 Path : " +
+                    "Storage Path Not Specified ");
         if (passwordCaptureStoragePath == null || passwordCaptureStoragePath.isEmpty())
-            throw new RuntimeException("Application Password Capture Fetcher : Storage Folder Not Specified");
+            throw new RuntimeException("Application Request Service - Capture Fetcher : " +
+                    "Storage Path Not Specified");
     }
 
-    public ActiveRequest createWPAActiveRequest(MultipartFile passwordCaptureFile,
-                                                String ssid,
-                                                String[] candidateValueLists) {
+    public Request createRequest(RequestIO.Create.Request requestDTO,
+                                 MultipartFile passwordCaptureFile,
+                                 String[] candidateValueLists) {
         User user = userService.getUserOrThrow();
-        ActiveRequest activeRequest = activeRequestRepository.save(new ActiveRequest());
+        // Init Request
+        Request request = requestRepository.save(new Request());
+        request.setOwner(user);
 
-        // Validate Capture file
-        Path tempFilePath = Paths.get(passwordCaptureValidationPath, UUID.randomUUID().toString());
-        try {
-            if (!Files.exists(tempFilePath))
-                Files.createDirectories(tempFilePath.getParent());
-            String response = ConsoleCommandUtil.executeCommandInConsole(
-                    "aircrack-ng", tempFilePath.toString(), "-b", ssid);
-            if (!response.contains(VALID_FILE))
-                if (response.contains(INVALID_SSID))
-                    throw new SystemException(2342, "SSID was not found in the capture", BAD_REQUEST);
-                else if (response.contains(INVALID_FILE))
-                    throw new SystemException(234, "Could not understand capture file", BAD_REQUEST);
-
-        } catch (IOException | InterruptedException ignored) {
-            throw new SystemException(21312, "Error Processing the capture file", INTERNAL_SERVER_ERROR);
-        } finally {
-            try {
-                Files.deleteIfExists(tempFilePath);
-            } catch (IOException ignored) {
-            }
+        // Set Request Detail
+        switch (requestDTO.getRequestType()) {
+            case WPA:
+                request.setRequestDetail(
+                        wpaRequestDetailService.create((WPARequestDetail) requestDTO.getRequestDetail(), passwordCaptureFile));
         }
 
-        // Upload passwordCaptureFile
-        String fileKey = fileUploadService.uploadFile(passwordCaptureFile, passwordCaptureStoragePath + "/");
+        // Set Candidate Value List Set
+        request.setCandidateValueListSet(new HashSet<>(Arrays.asList(candidateValueLists)));
 
-        // Init Kraken Request
-        activeRequest.setOwner(user);
-        activeRequest.setSsid(ssid);
-        activeRequest.setPasswordCaptureFileKey(fileKey.substring(fileKey.lastIndexOf("/") + 1));
-        activeRequest.setCandidateValueListSet(new HashSet<>(Arrays.asList(candidateValueLists)));
-        activeRequest.setTrackedJobSet(new HashSet<>());
-
+        // Set Tracked Jobs
+        request.setTrackedJobSet(new HashSet<>());
         // For Candidate Value List...
-        activeRequest.getCandidateValueListSet().forEach(candidateValueListName -> {
+        request.getCandidateValueListSet().forEach(candidateValueListName -> {
             // Get Candidate Value List from Service
             CandidateValueList candidateValueList = candidateValueListService.get(candidateValueListName);
             if (candidateValueList == null)
                 throw new SystemException(23423,
                         "Candidate Value List with name " + candidateValueListName + " not found", BAD_REQUEST);
-
             // For Each Job Delimiter, Add a Tracked Job to the Request
             candidateValueList.getJobDelimiterSet().forEach(jobDelimter -> {
                 TrackedJob trackedJob = TrackedJob.builder()
@@ -130,26 +105,26 @@ public class ActiveRequestService {
                         .candidateValueListName(candidateValueList.getName())
                         .candidateValueListCharset(candidateValueList.getCharset())
                         .build();
-                trackedJob.setOwner(activeRequest);
-                activeRequest.getTrackedJobSet().add(trackedJob);
+                trackedJob.setOwner(request);
+                request.getTrackedJobSet().add(trackedJob);
             });
         });
 
-        return activeRequestRepository.save(activeRequest);
+        return requestRepository.save(request);
     }
 
     @Transactional(readOnly = true)
-    public ActiveRequest getActiveRequest(Long id) {
+    public Request get(Long id) {
         User user = userService.getUserOrThrow();
-        ActiveRequest activeRequest = activeRequestPermissionLayer.getWithOwner(id, user);
-        activeRequest.getCandidateValueListSet().size();
-        return activeRequest;
+        Request request = requestPermissionLayer.getWithOwner(id, user);
+        request.getCandidateValueListSet().size();
+        return request;
     }
 
-    public ActiveRequestIO.GetJob.Response getJob(Long id) {
+    public RequestIO.GetJob.Response getJob(Long id) {
         User user = userService.getUserOrThrow();
-        ActiveRequest activeRequest = activeRequestPermissionLayer.getWithOwner(id, user);
-        TrackedJob trackedJob = trackedJobService.getNextTrackedJobForRequest(activeRequest);
+        Request request = requestPermissionLayer.getWithOwner(id, user);
+        TrackedJob trackedJob = trackedJobService.getNextTrackedJobForRequest(request);
         if (trackedJob == null)
             throw new SystemException(1231, "No further pending jobs left", BAD_REQUEST);
 
@@ -175,29 +150,27 @@ public class ActiveRequestService {
             throw new SystemException(2432, "Failed to retrieve candidate values. Marking Job as error", INTERNAL_SERVER_ERROR);
         }
 
-        // Get Active Link for Password Capture File
-        String link = fileUploadService.getLink(passwordCaptureStoragePath + "/" + activeRequest.getPasswordCaptureFileKey());
-
         // Mark Job As Running
-        trackedJobService.markJobAsRunning(trackedJob);
+        trackedJob = trackedJobService.markJobAsRunning(trackedJob);
 
-        return new ActiveRequestIO.GetJob.Response(trackedJob.getId(), candidateValues, link);
+        // Send Response
+        return new RequestIO.GetJob.Response(request.getRequestType(), request.getRequestDetail(), trackedJob.getId(), candidateValues);
     }
 
     public void reportJob(Long id, String jobId, Boolean success, String password) {
         User user = userService.getUserOrThrow();
-        ActiveRequest activeRequest = activeRequestPermissionLayer.getWithOwner(id, user);
+        Request request = requestPermissionLayer.getWithOwner(id, user);
 
         if (success) {
             // Password Found!
             if (password == null || password.isEmpty())
                 throw new SystemException(32423, "Success report must have a value to report", BAD_REQUEST);
             // Retire Active Request
-            retireActiveRequest(activeRequest.getId());
+            retireActiveRequest(request.getId());
             // TODO : Email Password Found
         } else {
             // Job Complete. Password was not found... Mark Job as Complete
-            TrackedJob trackedJob = trackedJobService.getTrackedJob(activeRequest, jobId);
+            TrackedJob trackedJob = trackedJobService.getTrackedJob(request, jobId);
             switch (trackedJob.getStatus()) {
                 case PENDING:
                     throw new SystemException(342, "Tracked Job has pending status and cannot be completed!", BAD_REQUEST);
@@ -209,20 +182,22 @@ public class ActiveRequestService {
             trackedJobService.markJobAsComplete(trackedJob);
 
             // Check if there are more jobs left
-            if (trackedJobService.getNextTrackedJobForRequest(activeRequest) == null) {
+            if (trackedJobService.getNextTrackedJobForRequest(request) == null) {
                 // No more Jobs are Left... retire active request
-                retireActiveRequest(activeRequest.getId());
+                retireActiveRequest(request.getId());
                 // TODO : Email Password Not Found
             }
         }
     }
 
-    public void retireActiveRequest(Long id) {
-        ActiveRequest activeRequest = activeRequestPermissionLayer.get(id);
-        if (activeRequest.getPasswordCaptureFileKey() != null)
-            fileUploadService.deleteFile(activeRequest.getPasswordCaptureFileKey());
-        activeRequestRepository.delete(activeRequest);
 
+    public void retireActiveRequest(Long id) {
+        Request request = requestPermissionLayer.get(id);
+        switch (request.getRequestType()){
+            case WPA:
+                wpaRequestDetailService.delete(id);
+        }
+        requestRepository.delete(request);
         // TODO : Move to Completed Request
     }
 }

@@ -21,7 +21,7 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "tracked_job")
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-public class TrackedJob extends MtoOPermissionEntity<ActiveRequest> {
+public class TrackedJob extends MtoOPermissionEntity<Request> {
 
     @Id
     private String id;

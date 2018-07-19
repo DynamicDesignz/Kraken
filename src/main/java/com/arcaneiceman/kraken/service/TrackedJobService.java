@@ -1,6 +1,6 @@
 package com.arcaneiceman.kraken.service;
 
-import com.arcaneiceman.kraken.domain.ActiveRequest;
+import com.arcaneiceman.kraken.domain.Request;
 import com.arcaneiceman.kraken.domain.TrackedJob;
 import com.arcaneiceman.kraken.domain.enumerations.TrackedJobStatus;
 import com.arcaneiceman.kraken.repository.TrackedJobRepository;
@@ -20,11 +20,11 @@ public class TrackedJobService {
         this.trackedJobPermissionLayer = trackedJobPermissionLayer;
     }
 
-    public TrackedJob getNextTrackedJobForRequest(ActiveRequest activeRequest) {
-        return trackedJobRepository.findFirstByOwnerAndStatus(activeRequest, TrackedJobStatus.PENDING);
+    public TrackedJob getNextTrackedJobForRequest(Request request) {
+        return trackedJobRepository.findFirstByOwnerAndStatus(request, TrackedJobStatus.PENDING);
     }
 
-    public TrackedJob getTrackedJob(ActiveRequest owner, String id) {
+    public TrackedJob getTrackedJob(Request owner, String id) {
         return trackedJobPermissionLayer.getWithOwner(id, owner);
     }
 

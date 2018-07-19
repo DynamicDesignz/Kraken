@@ -1,38 +1,37 @@
 package com.arcaneiceman.kraken.domain;
 
 import com.arcaneiceman.kraken.domain.abs.MtoOPermissionEntity;
-import com.arcaneiceman.kraken.domain.embedded.JobDelimter;
+import com.arcaneiceman.kraken.domain.abs.RequestDetail;
+import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
 import java.util.Set;
 
-/**
- * Created by Wali on 4/21/2018.
- */
+@EqualsAndHashCode(callSuper = false, of = "id")
+@Setter
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
+@Table(name = "request")
 @Entity
-@Table(name = "kraken_request")
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-public class ActiveRequest extends MtoOPermissionEntity<User>{
+public class Request extends MtoOPermissionEntity<User> {
 
+    private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Column
-    private String ssid;
+    @Enumerated(EnumType.STRING)
+    private RequestType requestType;
 
-    @Column
-    private String passwordCaptureFileKey;
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn
+    private RequestDetail requestDetail;
 
     @ElementCollection
     private Set<String> candidateValueListSet;
@@ -41,5 +40,4 @@ public class ActiveRequest extends MtoOPermissionEntity<User>{
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 20)
     private Set<TrackedJob> trackedJobSet;
-
 }

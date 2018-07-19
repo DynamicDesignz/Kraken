@@ -1,9 +1,9 @@
 package com.arcaneiceman.kraken.controller;
 
-import com.arcaneiceman.kraken.controller.io.ActiveRequestIO;
-import com.arcaneiceman.kraken.domain.ActiveRequest;
+import com.arcaneiceman.kraken.controller.io.RequestIO;
+import com.arcaneiceman.kraken.domain.Request;
 import com.arcaneiceman.kraken.security.AuthoritiesConstants;
-import com.arcaneiceman.kraken.service.ActiveRequestService;
+import com.arcaneiceman.kraken.service.RequestService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -17,52 +17,52 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api")
 @Secured(AuthoritiesConstants.CONSUMER)
-public class ActiveRequestController {
+public class RequestController {
 
-    private static Logger log = LoggerFactory.getLogger(ActiveRequestController.class);
+    private static Logger log = LoggerFactory.getLogger(RequestController.class);
 
-    private ActiveRequestService activeRequestService;
+    private RequestService requestService;
 
-    public ActiveRequestController(ActiveRequestService activeRequestService) {
-        this.activeRequestService = activeRequestService;
+    public RequestController(RequestService requestService) {
+        this.requestService = requestService;
     }
 
-    @PostMapping(value = "/active-requests/wpa")
-    public ResponseEntity<ActiveRequest> createWPAActiveRequest(
-            @RequestParam(value = "packet-capture-file") MultipartFile passwordCaptureFile,
-            @RequestParam(value = "ssid") String ssid,
+    @PostMapping(value = "/requests")
+    public ResponseEntity<Request> create(
+            @RequestBody RequestIO.Create.Request requestDTO,
+            @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile,
             @RequestParam(value = "candidate-value-list") String[] candidateValueLists) {
         log.debug("REST Request to create WPA Request");
         return ResponseEntity.created(null).body(
-                activeRequestService.createWPAActiveRequest(passwordCaptureFile, ssid, candidateValueLists));
+                requestService.createRequest(requestDTO, passwordCaptureFile, candidateValueLists));
     }
 
-    @GetMapping(value = "/active-requests/{id}")
-    public ResponseEntity<ActiveRequest> getActiveRequest(@PathVariable Long id) {
+    @GetMapping(value = "/requests/{id}")
+    public ResponseEntity<Request> get(@PathVariable Long id) {
         log.debug("REST Request to get Request : {}", id);
-        return ResponseEntity.ok(activeRequestService.getActiveRequest(id));
+        return ResponseEntity.ok(requestService.getActiveRequest(id));
     }
 
-    @PostMapping(value = "/active-requests/{id}/get-job")
-    public ResponseEntity<ActiveRequestIO.GetJob.Response> getJob(@PathVariable Long id) {
+    @PostMapping(value = "/requests/{id}/get-job")
+    public ResponseEntity<RequestIO.GetJob.Response> getJob(@PathVariable Long id) {
         log.debug("REST Request to get Job for Request : {}", id);
-        return ResponseEntity.ok(activeRequestService.getJob(id));
+        return ResponseEntity.ok(requestService.getJob(id));
     }
 
-    @PostMapping(value = "/active-requests/{id}/report-job")
+    @PostMapping(value = "/requests/{id}/report-job")
     public ResponseEntity<Void> reportJob(@PathVariable Long id,
                                           @RequestParam String jobId,
                                           @RequestParam Boolean success,
                                           @RequestParam(required = false) String password) {
         log.debug("REST Request to report Job {} for Request : {}", jobId, id);
-        activeRequestService.reportJob(id, jobId, success, password);
+        requestService.reportJob(id, jobId, success, password);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping(value = "/active-requests/{id}")
     public ResponseEntity deleteActiveRequest(@PathVariable Long id) {
         log.debug("REST Request to delete Request : {}", id);
-        activeRequestService.retireActiveRequest(id);
+        requestService.retireActiveRequest(id);
         return ResponseEntity.ok().build();
     }
 
