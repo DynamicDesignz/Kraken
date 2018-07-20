@@ -91,8 +91,6 @@ public class WPARequestDetailService {
 
     public void delete(Long id) {
         WPARequestDetail wpaRequestDetail = wpaRequestDetailRepository.getOne(id);
-        if (wpaRequestDetail == null)
-            throw new SystemException(342, "WPA Request not found", NOT_FOUND);
         if (wpaRequestDetail.getPasswordCaptureFileKey() != null)
             fileUploadService.deleteFile(wpaRequestDetail.getPasswordCaptureFileKey());
         wpaRequestDetailRepository.delete(wpaRequestDetail);

@@ -1,7 +1,7 @@
 package com.arcaneiceman.kraken.domain;
 
 import com.arcaneiceman.kraken.domain.abs.MtoOPermissionEntity;
-import com.arcaneiceman.kraken.domain.enumerations.TrackedJobStatus;
+import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import lombok.*;
 import org.hibernate.annotations.*;
 
@@ -12,25 +12,18 @@ import javax.persistence.Table;
 /**
  * Created by Wali on 4/21/2018.
  */
-@Builder
+@EqualsAndHashCode(callSuper = false, of = "id")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = false, of = "id")
 @Entity
-@Table(name = "tracked_job")
+@Table(name = "tracked_password_list_job")
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-public class TrackedJob extends MtoOPermissionEntity<Request> {
+public class TrackedPasswordListJob extends MtoOPermissionEntity<TrackedPasswordList> {
 
     @Id
     private String id;
-
-    @Column
-    private String candidateValueListName;
-
-    @Column
-    private String candidateValueListCharset;
 
     @Column
     private Long startByte;
@@ -40,6 +33,6 @@ public class TrackedJob extends MtoOPermissionEntity<Request> {
 
     @Column
     @Enumerated(EnumType.STRING)
-    private TrackedJobStatus status;
+    private TrackingStatus status;
 
 }

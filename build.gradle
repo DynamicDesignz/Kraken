@@ -80,6 +80,10 @@ dependencies {
 	compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.213'
 	compile group: 'com.ttt.eru.libs', name: 'file-upload', version: '1.0.0'
 
+	// Quartz
+	compile group: 'org.quartz-scheduler', name: 'quartz', version: '2.3.0'
+	compile group: 'org.quartz-scheduler', name: 'quartz-jobs', version: '2.3.0'
+
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 	testCompile('org.springframework.security:spring-security-test')
 }

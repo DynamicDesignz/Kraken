@@ -20,7 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class RequestController {
 
     private static Logger log = LoggerFactory.getLogger(RequestController.class);
-
     private RequestService requestService;
 
     public RequestController(RequestService requestService) {
@@ -40,7 +39,7 @@ public class RequestController {
     @GetMapping(value = "/requests/{id}")
     public ResponseEntity<Request> get(@PathVariable Long id) {
         log.debug("REST Request to get Request : {}", id);
-        return ResponseEntity.ok(requestService.getActiveRequest(id));
+        return ResponseEntity.ok(requestService.get(id));
     }
 
     @PostMapping(value = "/requests/{id}/get-job")

@@ -8,6 +8,7 @@ import lombok.*;
 import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.*;
+import java.util.List;
 import java.util.Set;
 
 @EqualsAndHashCode(callSuper = false, of = "id")
@@ -33,11 +34,14 @@ public class Request extends MtoOPermissionEntity<User> {
     @JoinColumn
     private RequestDetail requestDetail;
 
-    @ElementCollection
-    private Set<String> candidateValueListSet;
+    @JsonIgnore
+    @OrderBy("id")
+    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TrackedPasswordList> trackedPasswordLists;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @BatchSize(size = 20)
-    private Set<TrackedJob> trackedJobSet;
+    @OrderBy("id")
+    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY, cascade =  CascadeType.ALL, orphanRemoval = true)
+    private List<TrackedCrunchList> trackedCrunchLists;
+
 }

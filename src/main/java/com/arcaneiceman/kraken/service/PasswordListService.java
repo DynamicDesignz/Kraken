@@ -1,7 +1,7 @@
 package com.arcaneiceman.kraken.service;
 
-import com.arcaneiceman.kraken.domain.CandidateValueList;
-import com.arcaneiceman.kraken.repository.CandidateValueListRepository;
+import com.arcaneiceman.kraken.domain.PasswordList;
+import com.arcaneiceman.kraken.repository.PasswordListRepository;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,7 +14,7 @@ import org.zalando.problem.Status;
  */
 @Service
 @Transactional
-public class CandidateValueListService {
+public class PasswordListService {
 
 //    @Value("${application.candidate-value-list-settings.folder-prefix}")
 //    private String storagePath;
@@ -23,13 +23,13 @@ public class CandidateValueListService {
 //    private String jobSize;
 //
 //    private final AmazonS3Configuration amazonS3Configuration;
-    private final CandidateValueListRepository candidateValueListRepository;
+    private final PasswordListRepository passwordListRepository;
 
-    public CandidateValueListService(
+    public PasswordListService(
             //AmazonS3Configuration amazonS3Configuration,
-                                     CandidateValueListRepository candidateValueListRepository) {
+                                     PasswordListRepository passwordListRepository) {
         //this.amazonS3Configuration = amazonS3Configuration;
-        this.candidateValueListRepository = candidateValueListRepository;
+        this.passwordListRepository = passwordListRepository;
 
     }
 
@@ -45,8 +45,8 @@ public class CandidateValueListService {
 //    @Scheduled(cron = "0 0 1 * * ?")
 //    public void checkS3Bucket() throws IOException {
 //        log.info("Fetching Candidate Value Lists From Amazon S3...");
-//        List<String> krakenList = candidateValueListRepository.findAll().stream()
-//                .map(CandidateValueList::getName)
+//        List<String> krakenList = passwordListRepository.findAll().stream()
+//                .map(PasswordList::getName)
 //                .collect(Collectors.toList());
 //        List<String> s3List = amazonS3Configuration.generateClient().listObjects(
 //                amazonS3Configuration.getAmazonS3BucketName(), storagePath).getObjectSummaries().stream()
@@ -56,7 +56,7 @@ public class CandidateValueListService {
 //        // Remove Lists that dont exist any more
 //        for (String existingList : krakenList)
 //            if (!s3List.contains(existingList))
-//                candidateValueListRepository.deleteById(existingList);
+//                passwordListRepository.deleteById(existingList);
 //
 //        // Add Lists that are now present
 //        for (String s3ListItem : s3List)
@@ -98,17 +98,17 @@ public class CandidateValueListService {
 //                    jobDelimiterSet.add(new JobDelimter(jobStartMarker, jobOffsetMarker));
 //
 //                // Save Candidate Value list
-//                candidateValueListRepository.save(new CandidateValueList(s3ListItem.substring(s3ListItem.lastIndexOf("/") + 1), null, jobDelimiterSet));
+//                passwordListRepository.save(new PasswordList(s3ListItem.substring(s3ListItem.lastIndexOf("/") + 1), null, jobDelimiterSet));
 //            }
 //        log.info("Candidate Value Lists Fetch From Amazon S3 Complete!");
 //    }
 
-    public Page<CandidateValueList> get(Pageable pageable) {
-        return candidateValueListRepository.findAll(pageable);
+    public Page<PasswordList> get(Pageable pageable) {
+        return passwordListRepository.findAll(pageable);
     }
 
-    public CandidateValueList get(String name) {
-        return candidateValueListRepository.findById(name)
+    public PasswordList get(String name) {
+        return passwordListRepository.findById(name)
                 .orElseThrow(() -> new SystemException(2342, "Could not find Candidate Value List", Status.NOT_FOUND));
     }
 

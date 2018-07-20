@@ -4,7 +4,7 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.arcaneiceman.kraken.controller.io.RequestIO;
 import com.arcaneiceman.kraken.domain.*;
-import com.arcaneiceman.kraken.domain.enumerations.TrackedJobStatus;
+import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import com.arcaneiceman.kraken.repository.RequestRepository;
 import com.arcaneiceman.kraken.service.permission.abs.RequestPermissionLayer;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
@@ -36,25 +36,25 @@ public class RequestService {
 
     private UserService userService;
     private AmazonS3Configuration amazonS3Configuration;
-    private CandidateValueListService candidateValueListService;
+    private PasswordListService passwordListService;
     private RequestPermissionLayer requestPermissionLayer;
     private RequestRepository requestRepository;
-    private TrackedJobService trackedJobService;
+    private TrackedPasswordListJobService trackedPasswordListJobService;
     private WPARequestDetailService wpaRequestDetailService;
 
     public RequestService(UserService userService,
                           AmazonS3Configuration amazonS3Configuration,
-                          CandidateValueListService candidateValueListService,
+                          PasswordListService passwordListService,
                           RequestPermissionLayer requestPermissionLayer,
                           RequestRepository requestRepository,
-                          TrackedJobService trackedJobService,
+                          TrackedPasswordListJobService trackedPasswordListJobService,
                           WPARequestDetailService wpaRequestDetailService) {
         this.userService = userService;
         this.amazonS3Configuration = amazonS3Configuration;
-        this.candidateValueListService = candidateValueListService;
+        this.passwordListService = passwordListService;
         this.requestPermissionLayer = requestPermissionLayer;
         this.requestRepository = requestRepository;
-        this.trackedJobService = trackedJobService;
+        this.trackedPasswordListJobService = trackedPasswordListJobService;
         this.wpaRequestDetailService = wpaRequestDetailService;
     }
 
@@ -91,19 +91,19 @@ public class RequestService {
         // For Candidate Value List...
         request.getCandidateValueListSet().forEach(candidateValueListName -> {
             // Get Candidate Value List from Service
-            CandidateValueList candidateValueList = candidateValueListService.get(candidateValueListName);
-            if (candidateValueList == null)
+            PasswordList passwordList = passwordListService.get(candidateValueListName);
+            if (passwordList == null)
                 throw new SystemException(23423,
                         "Candidate Value List with name " + candidateValueListName + " not found", BAD_REQUEST);
             // For Each Job Delimiter, Add a Tracked Job to the Request
-            candidateValueList.getJobDelimiterSet().forEach(jobDelimter -> {
+            passwordList.getJobDelimiterSet().forEach(jobDelimter -> {
                 TrackedJob trackedJob = TrackedJob.builder()
                         .id(UUID.randomUUID().toString())
                         .startByte(jobDelimter.getStartByte())
                         .endByte(jobDelimter.getEndByte())
-                        .status(TrackedJobStatus.PENDING)
-                        .candidateValueListName(candidateValueList.getName())
-                        .candidateValueListCharset(candidateValueList.getCharset())
+                        .status(TrackingStatus.PENDING)
+                        .candidateValueListName(passwordList.getName())
+                        .candidateValueListCharset(passwordList.getCharset())
                         .build();
                 trackedJob.setOwner(request);
                 request.getTrackedJobSet().add(trackedJob);
@@ -124,7 +124,7 @@ public class RequestService {
     public RequestIO.GetJob.Response getJob(Long id) {
         User user = userService.getUserOrThrow();
         Request request = requestPermissionLayer.getWithOwner(id, user);
-        TrackedJob trackedJob = trackedJobService.getNextTrackedJobForRequest(request);
+        TrackedJob trackedJob = trackedPasswordListJobService.getNextTrackedJobForRequest(request);
         if (trackedJob == null)
             throw new SystemException(1231, "No further pending jobs left", BAD_REQUEST);
 
@@ -146,12 +146,12 @@ public class RequestService {
                 candidateValues.add(thisLine);
         } catch (Exception e) {
             // Failed to retrieve Candidate Value List... marking job as error
-            trackedJobService.markJobAsError(trackedJob);
+            trackedPasswordListJobService.markJobAsError(trackedJob);
             throw new SystemException(2432, "Failed to retrieve candidate values. Marking Job as error", INTERNAL_SERVER_ERROR);
         }
 
         // Mark Job As Running
-        trackedJob = trackedJobService.markJobAsRunning(trackedJob);
+        trackedJob = trackedPasswordListJobService.markJobAsRunning(trackedJob);
 
         // Send Response
         return new RequestIO.GetJob.Response(request.getRequestType(), request.getRequestDetail(), trackedJob.getId(), candidateValues);
@@ -170,7 +170,7 @@ public class RequestService {
             // TODO : Email Password Found
         } else {
             // Job Complete. Password was not found... Mark Job as Complete
-            TrackedJob trackedJob = trackedJobService.getTrackedJob(request, jobId);
+            TrackedJob trackedJob = trackedPasswordListJobService.getTrackedJob(request, jobId);
             switch (trackedJob.getStatus()) {
                 case PENDING:
                     throw new SystemException(342, "Tracked Job has pending status and cannot be completed!", BAD_REQUEST);
@@ -179,10 +179,10 @@ public class RequestService {
                 case ERROR:
                     throw new SystemException(342, "Tracked Job has error status and cannot be completed!", BAD_REQUEST);
             }
-            trackedJobService.markJobAsComplete(trackedJob);
+            trackedPasswordListJobService.markJobAsComplete(trackedJob);
 
             // Check if there are more jobs left
-            if (trackedJobService.getNextTrackedJobForRequest(request) == null) {
+            if (trackedPasswordListJobService.getNextTrackedJobForRequest(request) == null) {
                 // No more Jobs are Left... retire active request
                 retireActiveRequest(request.getId());
                 // TODO : Email Password Not Found

@@ -1,5 +1,5 @@
 package com.arcaneiceman.kraken.domain.enumerations;
 
 public enum  RequestType {
-    WPA
+    WPA, MATCH
 }

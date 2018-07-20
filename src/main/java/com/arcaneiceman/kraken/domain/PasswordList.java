@@ -20,7 +20,7 @@ import java.util.Set;
 @Entity
 @Table(name = "candidate_value_list")
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-public class CandidateValueList {
+public class PasswordList {
 
     @Id
     private Long id;
