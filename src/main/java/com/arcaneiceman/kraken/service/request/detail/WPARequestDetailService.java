@@ -1,6 +1,6 @@
-package com.arcaneiceman.kraken.service;
+package com.arcaneiceman.kraken.service.request.detail;
 
-import com.arcaneiceman.kraken.domain.WPARequestDetail;
+import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.repository.WPARequestDetailRepository;
 import com.arcaneiceman.kraken.service.utils.FileUploadService;
 import com.arcaneiceman.kraken.util.ConsoleCommandUtil;
@@ -18,7 +18,8 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 import static com.arcaneiceman.kraken.config.Constants.*;
-import static org.zalando.problem.Status.*;
+import static org.zalando.problem.Status.BAD_REQUEST;
+import static org.zalando.problem.Status.INTERNAL_SERVER_ERROR;
 
 @Service
 @Transactional
@@ -67,7 +68,7 @@ public class WPARequestDetailService {
                 else if (response.contains(INVALID_FILE))
                     throw new SystemException(234, "Could not understand capture file", BAD_REQUEST);
 
-        } catch (IOException | InterruptedException ignored) {
+        } catch (IOException ignored) {
             throw new SystemException(21312, "Error Processing the capture file", INTERNAL_SERVER_ERROR);
         } finally {
             try {

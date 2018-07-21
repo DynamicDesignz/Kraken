@@ -1,45 +1,53 @@
 package com.arcaneiceman.kraken.service;
 
-import com.arcaneiceman.kraken.domain.Request;
-import com.arcaneiceman.kraken.domain.TrackedJob;
+import com.arcaneiceman.kraken.domain.TrackedPasswordList;
+import com.arcaneiceman.kraken.domain.TrackedPasswordListJob;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
-import com.arcaneiceman.kraken.repository.TrackedJobRepository;
-import com.arcaneiceman.kraken.service.permission.abs.TrackedJobPermissionLayer;
+import com.arcaneiceman.kraken.repository.TrackedPasswordListJobRepository;
+import com.arcaneiceman.kraken.service.permission.abs.TrackedPasswordListJobPermissionLayer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @Transactional
 public class TrackedPasswordListJobService {
 
-    private TrackedJobRepository trackedJobRepository;
-    private TrackedJobPermissionLayer trackedJobPermissionLayer;
+    private TrackedPasswordListJobRepository trackedPasswordListJobRepository;
+    private TrackedPasswordListJobPermissionLayer trackedPasswordListJobPermissionLayer;
 
-    public TrackedPasswordListJobService(TrackedJobRepository trackedJobRepository, TrackedJobPermissionLayer trackedJobPermissionLayer) {
-        this.trackedJobRepository = trackedJobRepository;
-        this.trackedJobPermissionLayer = trackedJobPermissionLayer;
+    public TrackedPasswordListJobService(TrackedPasswordListJobRepository trackedPasswordListJobRepository, TrackedPasswordListJobPermissionLayer trackedPasswordListJobPermissionLayer) {
+        this.trackedPasswordListJobRepository = trackedPasswordListJobRepository;
+        this.trackedPasswordListJobPermissionLayer = trackedPasswordListJobPermissionLayer;
     }
 
-    public TrackedJob getNextTrackedJobForRequest(Request request) {
-        return trackedJobRepository.findFirstByOwnerAndStatus(request, TrackingStatus.PENDING);
+    public TrackedPasswordListJob create(Long startByte, Long endByte, TrackedPasswordList trackedPasswordList) {
+        TrackedPasswordListJob trackedPasswordListJob = new TrackedPasswordListJob(
+                UUID.randomUUID().toString(),
+                startByte,
+                endByte,
+                TrackingStatus.PENDING);
+        trackedPasswordListJob.setOwner(trackedPasswordList);
+        return trackedPasswordListJobRepository.save(trackedPasswordListJob);
     }
 
-    public TrackedJob getTrackedJob(Request owner, String id) {
-        return trackedJobPermissionLayer.getWithOwner(id, owner);
+    public TrackedPasswordListJob getNextTrackedJob(TrackedPasswordList owner) {
+        return trackedPasswordListJobRepository.findFirstByOwnerAndStatus(owner, TrackingStatus.PENDING);
     }
 
-    public TrackedJob markJobAsRunning(TrackedJob trackedJob) {
+    public TrackedPasswordListJob markJobAsRunning(TrackedPasswordListJob trackedJob) {
         trackedJob.setStatus(TrackingStatus.RUNNING);
-        return trackedJobRepository.save(trackedJob);
+        return trackedPasswordListJobRepository.save(trackedJob);
     }
 
-    public TrackedJob markJobAsError(TrackedJob trackedJob) {
+    public TrackedPasswordListJob markJobAsError(TrackedPasswordListJob trackedJob) {
         trackedJob.setStatus(TrackingStatus.ERROR);
-        return trackedJobRepository.save(trackedJob);
+        return trackedPasswordListJobRepository.save(trackedJob);
     }
 
-    public TrackedJob markJobAsComplete(TrackedJob trackedJob){
+    public TrackedPasswordListJob markJobAsComplete(TrackedPasswordListJob trackedJob) {
         trackedJob.setStatus(TrackingStatus.COMPLETE);
-        return trackedJobRepository.save(trackedJob);
+        return trackedPasswordListJobRepository.save(trackedJob);
     }
 }

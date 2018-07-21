@@ -25,10 +25,10 @@ public class TrackedPasswordList extends MtoOPermissionEntity<Request> {
     private Long id;
 
     @Column
-    private String candidateValueListName;
+    private String passwordListName;
 
     @Column
-    private String candidateValueListCharset;
+    private String passwordListCharset;
 
     @Column
     @Enumerated(EnumType.STRING)

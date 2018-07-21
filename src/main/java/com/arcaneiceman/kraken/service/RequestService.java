@@ -3,10 +3,13 @@ package com.arcaneiceman.kraken.service;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.arcaneiceman.kraken.controller.io.RequestIO;
-import com.arcaneiceman.kraken.domain.*;
-import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
+import com.arcaneiceman.kraken.domain.Request;
+import com.arcaneiceman.kraken.domain.User;
+import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.repository.RequestRepository;
 import com.arcaneiceman.kraken.service.permission.abs.RequestPermissionLayer;
+import com.arcaneiceman.kraken.service.request.detail.MatchRequestDetailService;
+import com.arcaneiceman.kraken.service.request.detail.WPARequestDetailService;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
 import com.ttt.eru.libs.fileupload.configuration.AmazonS3Configuration;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +22,8 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.zalando.problem.Status.BAD_REQUEST;
 import static org.zalando.problem.Status.INTERNAL_SERVER_ERROR;
@@ -39,23 +43,29 @@ public class RequestService {
     private PasswordListService passwordListService;
     private RequestPermissionLayer requestPermissionLayer;
     private RequestRepository requestRepository;
-    private TrackedPasswordListJobService trackedPasswordListJobService;
     private WPARequestDetailService wpaRequestDetailService;
+    private MatchRequestDetailService matchRequestDetailService;
+    private TrackedPasswordListService trackedPasswordListService;
+    private TrackedCrunchListService trackedCrunchListService;
 
     public RequestService(UserService userService,
                           AmazonS3Configuration amazonS3Configuration,
                           PasswordListService passwordListService,
                           RequestPermissionLayer requestPermissionLayer,
                           RequestRepository requestRepository,
-                          TrackedPasswordListJobService trackedPasswordListJobService,
-                          WPARequestDetailService wpaRequestDetailService) {
+                          WPARequestDetailService wpaRequestDetailService,
+                          MatchRequestDetailService matchRequestDetailService,
+                          TrackedPasswordListService trackedPasswordListService,
+                          TrackedCrunchListService trackedCrunchListService) {
         this.userService = userService;
         this.amazonS3Configuration = amazonS3Configuration;
         this.passwordListService = passwordListService;
         this.requestPermissionLayer = requestPermissionLayer;
         this.requestRepository = requestRepository;
-        this.trackedPasswordListJobService = trackedPasswordListJobService;
         this.wpaRequestDetailService = wpaRequestDetailService;
+        this.matchRequestDetailService = matchRequestDetailService;
+        this.trackedPasswordListService = trackedPasswordListService;
+        this.trackedCrunchListService = trackedCrunchListService;
     }
 
     @PostConstruct
@@ -69,8 +79,7 @@ public class RequestService {
     }
 
     public Request createRequest(RequestIO.Create.Request requestDTO,
-                                 MultipartFile passwordCaptureFile,
-                                 String[] candidateValueLists) {
+                                 MultipartFile passwordCaptureFile) {
         User user = userService.getUserOrThrow();
         // Init Request
         Request request = requestRepository.save(new Request());
@@ -81,34 +90,27 @@ public class RequestService {
             case WPA:
                 request.setRequestDetail(
                         wpaRequestDetailService.create((WPARequestDetail) requestDTO.getRequestDetail(), passwordCaptureFile));
+            case MATCH:
+                request.setRequestDetail(
+                        matchRequestDetailService.create());
         }
 
-        // Set Candidate Value List Set
-        request.setCandidateValueListSet(new HashSet<>(Arrays.asList(candidateValueLists)));
+        // Create Tracked Password List
+        request.setTrackedPasswordLists(new ArrayList<>());
+        if (requestDTO.getPasswordLists() != null && !request.getTrackedPasswordLists().isEmpty())
+            requestDTO.getPasswordLists().forEach(passwordListName ->
+                    request.getTrackedPasswordLists().add(trackedPasswordListService.create(passwordListName, request)));
 
-        // Set Tracked Jobs
-        request.setTrackedJobSet(new HashSet<>());
-        // For Candidate Value List...
-        request.getCandidateValueListSet().forEach(candidateValueListName -> {
-            // Get Candidate Value List from Service
-            PasswordList passwordList = passwordListService.get(candidateValueListName);
-            if (passwordList == null)
-                throw new SystemException(23423,
-                        "Candidate Value List with name " + candidateValueListName + " not found", BAD_REQUEST);
-            // For Each Job Delimiter, Add a Tracked Job to the Request
-            passwordList.getJobDelimiterSet().forEach(jobDelimter -> {
-                TrackedJob trackedJob = TrackedJob.builder()
-                        .id(UUID.randomUUID().toString())
-                        .startByte(jobDelimter.getStartByte())
-                        .endByte(jobDelimter.getEndByte())
-                        .status(TrackingStatus.PENDING)
-                        .candidateValueListName(passwordList.getName())
-                        .candidateValueListCharset(passwordList.getCharset())
-                        .build();
-                trackedJob.setOwner(request);
-                request.getTrackedJobSet().add(trackedJob);
-            });
-        });
+        // Create Tracked Crunch Lists
+        request.setTrackedCrunchLists(new ArrayList<>());
+        if (requestDTO.getCrunchParams() != null && !requestDTO.getCrunchParams().isEmpty())
+            requestDTO.getCrunchParams().forEach(crunchParams ->
+                    request.getTrackedCrunchLists().add(trackedCrunchListService.create(
+                            crunchParams.getMinSize(),
+                            crunchParams.getMaxSize(),
+                            crunchParams.getCharacters(),
+                            crunchParams.getStartString(),
+                            request)));
 
         return requestRepository.save(request);
     }
@@ -117,7 +119,8 @@ public class RequestService {
     public Request get(Long id) {
         User user = userService.getUserOrThrow();
         Request request = requestPermissionLayer.getWithOwner(id, user);
-        request.getCandidateValueListSet().size();
+        request.getTrackedPasswordLists().size();
+        request.getTrackedCrunchLists().size();
         return request;
     }
 
@@ -190,10 +193,9 @@ public class RequestService {
         }
     }
 
-
     public void retireActiveRequest(Long id) {
         Request request = requestPermissionLayer.get(id);
-        switch (request.getRequestType()){
+        switch (request.getRequestType()) {
             case WPA:
                 wpaRequestDetailService.delete(id);
         }

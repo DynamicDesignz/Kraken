@@ -29,8 +29,7 @@ public class RequestController {
     @PostMapping(value = "/requests")
     public ResponseEntity<Request> create(
             @RequestBody RequestIO.Create.Request requestDTO,
-            @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile,
-            @RequestParam(value = "candidate-value-list") String[] candidateValueLists) {
+            @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile) {
         log.debug("REST Request to create WPA Request");
         return ResponseEntity.created(null).body(
                 requestService.createRequest(requestDTO, passwordCaptureFile, candidateValueLists));

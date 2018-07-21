@@ -1,6 +1,6 @@
 package com.arcaneiceman.kraken.repository;
 
-import com.arcaneiceman.kraken.domain.WPARequestDetail;
+import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

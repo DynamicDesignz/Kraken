@@ -1,4 +1,4 @@
-package com.arcaneiceman.kraken.domain;
+package com.arcaneiceman.kraken.domain.request.detail;
 
 import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import lombok.AllArgsConstructor;
@@ -11,28 +11,18 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 import java.io.Serializable;
 
-/**
- * Created by Wali on 4/21/2018.
- */
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
 @Entity
-@Table(name = "wpa_request_details")
+@Table(name = "match_request_details")
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-public class WPARequestDetail extends RequestDetail implements Serializable{
+public class MatchRequestDetail extends RequestDetail implements Serializable {
 
     @Column
-    private String ssid;
-
-    @Column
-    private String passwordCaptureFileKey;
-
-    @Transient
-    private String passwordCaptureFileUrl;
+    private String valueToMatch;
 
 }

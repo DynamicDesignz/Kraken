@@ -1,5 +1,6 @@
 package com.arcaneiceman.kraken.domain;
 
+import com.arcaneiceman.kraken.domain.abs.MtoOPermissionEntity;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import lombok.*;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -12,9 +13,9 @@ import javax.persistence.*;
 @Setter
 @EqualsAndHashCode(callSuper = false, of = "id")
 @Entity
-@Table(name = "tracked_password_list")
+@Table(name = "tracked_crunch_list")
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-public class TrackedCrunchList {
+public class TrackedCrunchList extends MtoOPermissionEntity<Request> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
