@@ -1,10 +1,14 @@
 package com.arcaneiceman.kraken.service;
 
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 import com.arcaneiceman.kraken.controller.io.RequestIO;
 import com.arcaneiceman.kraken.domain.Request;
+import com.arcaneiceman.kraken.domain.TrackedCrunchList;
+import com.arcaneiceman.kraken.domain.TrackedPasswordList;
 import com.arcaneiceman.kraken.domain.User;
+import com.arcaneiceman.kraken.domain.abs.RequestDetail;
+import com.arcaneiceman.kraken.domain.embedded.Job;
+import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
+import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
 import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.repository.RequestRepository;
 import com.arcaneiceman.kraken.service.permission.abs.RequestPermissionLayer;
@@ -18,15 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.zalando.problem.Status.BAD_REQUEST;
-import static org.zalando.problem.Status.INTERNAL_SERVER_ERROR;
+import static org.zalando.problem.Status.FOUND;
+import static org.zalando.problem.Status.NO_CONTENT;
 
 @Service
 @Transactional
@@ -92,7 +93,7 @@ public class RequestService {
                         wpaRequestDetailService.create((WPARequestDetail) requestDTO.getRequestDetail(), passwordCaptureFile));
             case MATCH:
                 request.setRequestDetail(
-                        matchRequestDetailService.create());
+                        matchRequestDetailService.create((MatchRequestDetail) requestDTO));
         }
 
         // Create Tracked Password List
@@ -124,40 +125,56 @@ public class RequestService {
         return request;
     }
 
-    public RequestIO.GetJob.Response getJob(Long id) {
+    public RequestIO.GetJob.Response getJob() {
         User user = userService.getUserOrThrow();
-        Request request = requestPermissionLayer.getWithOwner(id, user);
-        TrackedJob trackedJob = trackedPasswordListJobService.getNextTrackedJobForRequest(request);
-        if (trackedJob == null)
-            throw new SystemException(1231, "No further pending jobs left", BAD_REQUEST);
+        // Get All Requests
+        List<Request> requestList = requestRepository.findByOwner(user);
 
-        // Declare Variables
-        List<String> candidateValues = new ArrayList<>();
+        for (Request request : requestList) {
+            // First preference is given to trackedPasswordLists
+            // Dispatch next available job in trackedPasswordLists
+            for (TrackedPasswordList trackedPasswordList : request.getTrackedPasswordLists()) {
+                if (trackedPasswordList.getStatus() == TrackingStatus.PENDING) {
+                    Job job = trackedPasswordListService.getNextJob(trackedPasswordList);
+                    if (job != null)
+                        return new RequestIO.GetJob.Response(
+                                request.getRequestType(),
+                                getRequestDetail(request),
+                                trackedPasswordList.getId(),
+                                job.getIndexNumber(),
+                                job.getValues());
+                }
+            }
 
-        // Get Portion of the Candidate Value List
-        try {
-            GetObjectRequest getObjectRequest = new GetObjectRequest(amazonS3Configuration.getAmazonS3BucketName(),
-                    candidateValueListStoragePath + "/" + trackedJob.getCandidateValueListName());
-            getObjectRequest.setRange(trackedJob.getStartByte(), trackedJob.getEndByte());
-            S3Object object = amazonS3Configuration.generateClient().getObject(getObjectRequest);
-            InputStream fileStream = new BufferedInputStream(object.getObjectContent());
-            InputStreamReader decoder = new InputStreamReader(fileStream, trackedJob.getCandidateValueListCharset());
-            BufferedReader buffered = new BufferedReader(decoder);
+            // No jobs to dispatch in trackedPasswordLists
+            // Dispatch next available job in trackedCrunchList
+            for (TrackedCrunchList trackedCrunchList : request.getTrackedCrunchLists()) {
+                if (trackedCrunchList.getStatus() == TrackingStatus.PENDING) {
+                    Job job = trackedCrunchListService.getNextJob(trackedCrunchList);
+                    if (job != null)
+                        return new RequestIO.GetJob.Response(
+                                request.getRequestType(),
+                                getRequestDetail(request),
+                                trackedCrunchList.getId(),
+                                job.getIndexNumber(),
+                                job.getValues());
+                }
+            }
 
-            String thisLine;
-            while ((thisLine = buffered.readLine()) != null)
-                candidateValues.add(thisLine);
-        } catch (Exception e) {
-            // Failed to retrieve Candidate Value List... marking job as error
-            trackedPasswordListJobService.markJobAsError(trackedJob);
-            throw new SystemException(2432, "Failed to retrieve candidate values. Marking Job as error", INTERNAL_SERVER_ERROR);
+            // No jobs to dispatch from trackedCrunchListEither
+            // If all trackedPasswordLists and all trackedCrunchLists are either ERROR or COMPLETE
+            if (request.getTrackedPasswordLists().stream()
+                    .allMatch(trackedPasswordList -> trackedPasswordList.getStatus() == TrackingStatus.COMPLETE
+                            || trackedPasswordList.getStatus() == TrackingStatus.ERROR) &&
+                    request.getTrackedCrunchLists().stream()
+                            .allMatch(trackedCrunchList -> trackedCrunchList.getStatus() == TrackingStatus.COMPLETE
+                                    || trackedCrunchList.getStatus() == TrackingStatus.ERROR)) {
+                // TODO : Mark Request As Complete
+                throw new SystemException(2423, "Request with id" + request.getId() + " is complete", NO_CONTENT);
+            }
         }
-
-        // Mark Job As Running
-        trackedJob = trackedPasswordListJobService.markJobAsRunning(trackedJob);
-
-        // Send Response
-        return new RequestIO.GetJob.Response(request.getRequestType(), request.getRequestDetail(), trackedJob.getId(), candidateValues);
+        // No more job exception
+        throw new SystemException(3242, "No Jobs Available", NO_CONTENT);
     }
 
     public void reportJob(Long id, String jobId, Boolean success, String password) {
@@ -201,5 +218,16 @@ public class RequestService {
         }
         requestRepository.delete(request);
         // TODO : Move to Completed Request
+    }
+
+    private RequestDetail getRequestDetail(Request request) {
+        switch (request.getRequestType()) {
+            case WPA:
+                return wpaRequestDetailService.get(request.getId());
+            case MATCH:
+                return matchRequestDetailService.get(request.getId());
+            default:
+                throw new RuntimeException("Request Type was null");
+        }
     }
 }

@@ -1,18 +1,28 @@
 package com.arcaneiceman.kraken.service;
 
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import com.arcaneiceman.kraken.domain.PasswordList;
 import com.arcaneiceman.kraken.domain.Request;
 import com.arcaneiceman.kraken.domain.TrackedPasswordList;
-import com.arcaneiceman.kraken.domain.TrackedPasswordListJob;
+import com.arcaneiceman.kraken.domain.embedded.Job;
+import com.arcaneiceman.kraken.domain.embedded.JobDelimiter;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import com.arcaneiceman.kraken.repository.TrackedPasswordListRepository;
 import com.arcaneiceman.kraken.service.permission.abs.TrackedPasswordListPermissionLayer;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
+import com.ttt.eru.libs.fileupload.configuration.AmazonS3Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.zalando.problem.Status;
 
-import java.util.HashSet;
+import javax.annotation.PostConstruct;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional
@@ -20,18 +30,27 @@ public class TrackedPasswordListService {
 
     private TrackedPasswordListRepository trackedPasswordListRepository;
     private TrackedPasswordListPermissionLayer trackedPasswordListPermissionLayer;
-    private TrackedPasswordListJobService trackedPasswordListJobService;
+    private AmazonS3Configuration amazonS3Configuration;
     private PasswordListService passwordListService;
 
+    @Value("${application.candidate-value-list-settings.folder-prefix}")
+    private String candidateValueListStoragePath;
 
     public TrackedPasswordListService(TrackedPasswordListRepository trackedPasswordListRepository,
                                       TrackedPasswordListPermissionLayer trackedPasswordListPermissionLayer,
-                                      TrackedPasswordListJobService trackedPasswordListJobService,
+                                      AmazonS3Configuration amazonS3Configuration,
                                       PasswordListService passwordListService) {
         this.trackedPasswordListRepository = trackedPasswordListRepository;
         this.trackedPasswordListPermissionLayer = trackedPasswordListPermissionLayer;
-        this.trackedPasswordListJobService = trackedPasswordListJobService;
+        this.amazonS3Configuration = amazonS3Configuration;
         this.passwordListService = passwordListService;
+    }
+
+    @PostConstruct
+    public void checkValues() {
+        if (candidateValueListStoragePath == null || candidateValueListStoragePath.isEmpty())
+            throw new RuntimeException("Application Tracked Password List Service - " +
+                    "Candidate Value List S3 Path : Storage Path Not Specified ");
     }
 
     TrackedPasswordList create(String passwordListName, Request request) {
@@ -41,44 +60,145 @@ public class TrackedPasswordListService {
                     "Candidate Value List with name " + passwordListName + " not found", Status.NOT_FOUND);
         TrackedPasswordList trackedPasswordList = new TrackedPasswordList(null,
                 passwordList.getName(),
-                passwordList.getCharset(),
-                TrackingStatus.PENDING, null);
+                TrackingStatus.PENDING,
+                passwordList.getJobDelimiterSet().size(),
+                0,
+                0,
+                0,
+                new ArrayList<>());
         trackedPasswordList.setOwner(request);
         return trackedPasswordListRepository.save(trackedPasswordList);
     }
 
-    TrackedPasswordListJob getNextJob(Long id, Request request) {
-        TrackedPasswordList trackedPasswordList = trackedPasswordListPermissionLayer.getWithOwner(id, request);
-        switch (trackedPasswordList.getStatus()) {
-            case PENDING:
-                // Create Tracked Jobs out of the PasswordList
-                PasswordList passwordList = passwordListService.get(trackedPasswordList.getPasswordListName());
-                if (passwordList == null) {
-                    trackedPasswordList.setStatus(TrackingStatus.ERROR);
-                    trackedPasswordListRepository.save(trackedPasswordList);
-                    return null;
-                }
-                trackedPasswordList.setTrackedPasswordListJobs(new HashSet<>());
-                passwordList.getJobDelimiterSet().forEach(jobDelimiter ->
-                        trackedPasswordList.getTrackedPasswordListJobs().add(trackedPasswordListJobService.create(
-                                jobDelimiter.getStartByte(),
-                                jobDelimiter.getEndByte(),
-                                trackedPasswordList)));
-                break;
-            case RUNNING:
-                // This list is already running so it does not need to be prepared
-                break;
-            case COMPLETE:
-                throw new SystemException(234, "Tracked Password List is complete already!", Status.INTERNAL_SERVER_ERROR);
-            case ERROR:
-                throw new SystemException(234, "Tracked Password List is in error state", Status.INTERNAL_SERVER_ERROR);
+    Job getNextJob(TrackedPasswordList trackedPasswordList) {
+        // Attempt to fetch password list. If not found, mark tracked password list as error and return null
+        PasswordList passwordList = passwordListService.getOrNull(trackedPasswordList.getPasswordListName());
+        if (passwordList == null) {
+            trackedPasswordList.setStatus(TrackingStatus.ERROR);
+            trackedPasswordListRepository.save(trackedPasswordList);
+            return null;
         }
 
-        // Fetch Next Job (Could return null if no job available)
-        TrackedPasswordListJob trackedPasswordListJob = trackedPasswordListJobService.getNextTrackedJob(trackedPasswordList);
-        if (trackedPasswordListJob != null)
-            return trackedPasswordListJobService.markJobAsRunning(trackedPasswordListJob);
-        else
-            return null;
+        // Check if there are any jobs in the job queue (which may have timed out or reported as error)
+        for(Job job : trackedPasswordList.getJobQueue()){
+            if (job.getTrackingStatus() == TrackingStatus.PENDING)
+                // Fetch Candidate Values, Mark as RUNNING and return
+                try {
+                    job.setValues(getCandidateValues(Long.parseLong(job.getStart()), Long.parseLong(job.getEnd()), passwordList));
+                    job.setTrackingStatus(TrackingStatus.RUNNING);
+                    trackedPasswordListRepository.save(trackedPasswordList);
+                    return job;
+                }
+                // Fetch Exception, remove job, increment error count and check if it is complete (with errors)
+                catch (Exception e){
+                    trackedPasswordList.setErrorJobCount(trackedPasswordList.getErrorJobCount() + 1);
+                    trackedPasswordList.getJobQueue().remove(job);
+                    if (checkIfListComplete(trackedPasswordList))
+                        trackedPasswordList.setStatus(TrackingStatus.COMPLETE);
+                    trackedPasswordListRepository.save(trackedPasswordList);
+                }
+        }
+
+        // Get Next Job From List
+        int nextJobIndex = trackedPasswordList.getNextJobIndex();
+        while (nextJobIndex < trackedPasswordList.getTotalJobCount()){
+            JobDelimiter jobDelimiter = passwordList.getJobDelimiterSet().get(trackedPasswordList.getNextJobIndex());
+            // Increment NextJobIndex for next time
+            trackedPasswordList.setNextJobIndex(trackedPasswordList.getNextJobIndex() + 1);
+            // Fetch Candidate Values, Add to Job Queue and return
+            try {
+                // Create Timeout Time
+                Date timeOutDate = new Date();
+                timeOutDate.setTime(new Date().getTime() + 1000000L);
+
+                // Create Job and add to job queue
+                Job job = new Job(
+                        nextJobIndex,
+                        TrackingStatus.RUNNING,
+                        Long.toString(jobDelimiter.getStartByte()),
+                        Long.toString(jobDelimiter.getEndByte()),
+                        0,
+                        timeOutDate,
+                        getCandidateValues(jobDelimiter.getStartByte(), jobDelimiter.getEndByte(), passwordList));
+                trackedPasswordList.getJobQueue().add(job);
+                if (trackedPasswordList.getStatus() != TrackingStatus.RUNNING)
+                    trackedPasswordList.setStatus(TrackingStatus.RUNNING);
+
+                // Save and return Job
+                trackedPasswordListRepository.save(trackedPasswordList);
+                return job;
+            }
+            // @Fetch Exception, Increment error
+            catch (Exception e) {
+                trackedPasswordList.setErrorJobCount(trackedPasswordList.getErrorJobCount() + 1);
+            }
+        }
+
+        // There are no more jobs left to create. Check if list is complete. If it is, mark it as complete.
+        if (checkIfListComplete(trackedPasswordList))
+            trackedPasswordList.setStatus(TrackingStatus.COMPLETE);
+        trackedPasswordListRepository.save(trackedPasswordList);
+        return null;
+    }
+
+    void reportJob(Long id, Integer jobIndexNumber, TrackingStatus trackingStatus, Request request) {
+        TrackedPasswordList trackedPasswordList = trackedPasswordListPermissionLayer.getWithOwner(id, request);
+
+        // Find Running Job with index number
+        Job job = trackedPasswordList.getJobQueue().stream()
+                .filter(jobFromStream -> Objects.equals(jobFromStream.getIndexNumber(), jobIndexNumber)
+                        && jobFromStream.getTrackingStatus() == TrackingStatus.RUNNING).findFirst()
+                .orElseThrow(() -> new SystemException(2131, "Could not find running job with indexNumber " + jobIndexNumber, Status.NOT_FOUND));
+
+        // Based on tracking status
+        switch (trackingStatus) {
+            case COMPLETE:
+                // Increment Complete Count
+                trackedPasswordList.setCompletedJobCount(trackedPasswordList.getCompletedJobCount() + 1);
+                // Remove from Queue
+                trackedPasswordList.getJobQueue().remove(job);
+                break;
+            case ERROR:
+                // Increment Error Count
+                job.setErrorCount(job.getErrorCount() + 1);
+                // If Error Count is above 3, remove it from queue and add it to error count
+                if (job.getErrorCount() > 3) {
+                    trackedPasswordList.getJobQueue().remove(job);
+                    trackedPasswordList.setErrorJobCount(trackedPasswordList.getErrorJobCount() + 1);
+                }
+                // Else, make it pending
+                else
+                    job.setTrackingStatus(TrackingStatus.PENDING);
+                break;
+            default:
+                throw new SystemException(423, "Job Report can either be COMPLETE or ERROR", Status.BAD_REQUEST);
+        }
+
+        if (checkIfListComplete(trackedPasswordList))
+            trackedPasswordList.setStatus(TrackingStatus.COMPLETE);
+
+        trackedPasswordListRepository.save(trackedPasswordList);
+    }
+
+    private List<String> getCandidateValues(Long startByte, Long endByte, PasswordList passwordList)
+            throws IOException {
+        List<String> candidateValues = new ArrayList<>();
+        GetObjectRequest getObjectRequest = new GetObjectRequest(amazonS3Configuration.getAmazonS3BucketName(),
+                candidateValueListStoragePath + "/" + passwordList.getName());
+        getObjectRequest.setRange(startByte,endByte);
+        S3Object object = amazonS3Configuration.generateClient().getObject(getObjectRequest);
+        InputStream fileStream = new BufferedInputStream(object.getObjectContent());
+        InputStreamReader decoder = new InputStreamReader(fileStream, passwordList.getCharset());
+        BufferedReader buffered = new BufferedReader(decoder);
+        String thisLine;
+        while ((thisLine = buffered.readLine()) != null)
+            candidateValues.add(thisLine);
+        return candidateValues;
+    }
+
+    private boolean checkIfListComplete(TrackedPasswordList trackedPasswordList) {
+        // If Complete Jobs + Error Jobs == Total Jobs, this list is complete
+        int reportedJobCount = trackedPasswordList.getCompletedJobCount() + trackedPasswordList.getErrorJobCount();
+        return Objects.equals(reportedJobCount, trackedPasswordList.getTotalJobCount());
     }
 }

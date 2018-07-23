@@ -27,12 +27,6 @@ public class Worker extends MtoOPermissionEntity<User> {
     private WorkerStatus status;
 
     @Column
-    private Integer benchmark;
-
-    @Column
-    private Long lastValuesPerSecond;
-
-    @Column
     private Date lastCheckIn;
 
 }

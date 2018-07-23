@@ -1,5 +1,6 @@
 package com.arcaneiceman.kraken.service.request.detail;
 
+import com.arcaneiceman.kraken.domain.Request;
 import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.repository.WPARequestDetailRepository;
 import com.arcaneiceman.kraken.service.utils.FileUploadService;
@@ -16,10 +17,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static com.arcaneiceman.kraken.config.Constants.*;
 import static org.zalando.problem.Status.BAD_REQUEST;
-import static org.zalando.problem.Status.INTERNAL_SERVER_ERROR;
 
 @Service
 @Transactional
@@ -61,15 +62,18 @@ public class WPARequestDetailService {
                 Files.createDirectories(tempFilePath.getParent());
             Files.write(tempFilePath, passwordCaptureFile.getBytes());
             String response = ConsoleCommandUtil.executeCommandInConsole(
+                    1, TimeUnit.SECONDS,
+                    ConsoleCommandUtil.OutputStream.OUT,
                     "aircrack-ng", tempFilePath.toString(), "-b", wpaRequestDetail.getSsid());
+            if (response == null)
+                throw new RuntimeException("Did not get response from aircrack");
             if (!response.contains(VALID_FILE))
                 if (response.contains(INVALID_SSID))
-                    throw new SystemException(2342, "SSID was not found in the capture", BAD_REQUEST);
+                    throw new RuntimeException("SSID was not found in the capture");
                 else if (response.contains(INVALID_FILE))
-                    throw new SystemException(234, "Could not understand capture file", BAD_REQUEST);
-
-        } catch (IOException ignored) {
-            throw new SystemException(21312, "Error Processing the capture file", INTERNAL_SERVER_ERROR);
+                    throw new RuntimeException("Could not understand capture file");
+        } catch (Exception e) {
+            throw new SystemException(21312, "Error processing the capture file: " + e.getMessage(), BAD_REQUEST);
         } finally {
             try {
                 Files.deleteIfExists(tempFilePath);

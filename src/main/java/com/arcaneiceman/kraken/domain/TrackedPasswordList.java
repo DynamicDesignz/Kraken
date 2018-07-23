@@ -1,14 +1,14 @@
 package com.arcaneiceman.kraken.domain;
 
 import com.arcaneiceman.kraken.domain.abs.MtoOPermissionEntity;
+import com.arcaneiceman.kraken.domain.embedded.Job;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
-import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
-import java.util.Set;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,14 +28,23 @@ public class TrackedPasswordList extends MtoOPermissionEntity<Request> {
     private String passwordListName;
 
     @Column
-    private String passwordListCharset;
-
-    @Column
     @Enumerated(EnumType.STRING)
     private TrackingStatus status;
 
+    @Column
+    private Integer totalJobCount;
+
+    @Column
+    private Integer nextJobIndex;
+
+    @Column
+    private Integer completedJobCount;
+
+    @Column
+    private Integer errorJobCount;
+
     @JsonIgnore
-    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @BatchSize(size = 20)
-    private Set<TrackedPasswordListJob> trackedPasswordListJobs;
+    @Embedded
+    @OrderBy("indexNumber")
+    private List<Job> jobQueue;
 }

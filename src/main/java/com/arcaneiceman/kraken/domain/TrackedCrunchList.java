@@ -1,11 +1,15 @@
 package com.arcaneiceman.kraken.domain;
 
 import com.arcaneiceman.kraken.domain.abs.MtoOPermissionEntity;
+import com.arcaneiceman.kraken.domain.embedded.Job;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,21 +39,23 @@ public class TrackedCrunchList extends MtoOPermissionEntity<Request> {
     private TrackingStatus status;
 
     @Column
-    private Long totalJobs;
+    private Integer totalJobs;
 
     @Column
-    private Long nextJobNumber;
+    private String nextJobString;
 
     @Column
-    private String lastJobPasswordValue;
+    private Integer nextJobIndex;
 
     @Column
-    private Long completedJobNumber;
+    private Integer completedJobCount;
 
     @Column
-    private Long runningJobNumber;
+    private Integer errorJobCount;
 
-    @Column
-    private Long errorJobNumber;
+    @JsonIgnore
+    @Embedded
+    @OrderBy("indexNumber")
+    private List<Job> jobQueue;
 
 }

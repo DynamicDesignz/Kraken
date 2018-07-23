@@ -49,6 +49,7 @@ public class RequestController {
 
     @PostMapping(value = "/requests/{id}/report-job")
     public ResponseEntity<Void> reportJob(@PathVariable Long id,
+                                          @
                                           @RequestParam String jobId,
                                           @RequestParam Boolean success,
                                           @RequestParam(required = false) String password) {

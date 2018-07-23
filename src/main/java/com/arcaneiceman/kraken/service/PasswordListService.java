@@ -16,10 +16,10 @@ import org.zalando.problem.Status;
 @Transactional
 public class PasswordListService {
 
-//    @Value("${application.candidate-value-list-settings.folder-prefix}")
+//    @Value("${application.password-list-settings.folder-prefix}")
 //    private String storagePath;
 //
-//    @Value("${application.candidate-value-list-settings.job-size}")
+//    @Value("${application.password-list-settings.job-size}")
 //    private String jobSize;
 //
 //    private final AmazonS3Configuration amazonS3Configuration;
@@ -74,7 +74,7 @@ public class PasswordListService {
 //                int numOfLinesRead = 0;
 //                long jobStartMarker = 0;
 //                long jobOffsetMarker = 0;
-//                Set<JobDelimter> jobDelimiterSet = new HashSet<>();
+//                Set<JobDelimiter> jobDelimiterSet = new HashSet<>();
 //
 //                // While there are lines to be read...
 //                while ((thisLine = buffered.readLine()) != null) {
@@ -85,7 +85,7 @@ public class PasswordListService {
 //                    // If job size limit is reached...
 //                    if (numOfLinesRead == Integer.parseInt(jobSize)) {
 //                        // Add job to delimiter set
-//                        jobDelimiterSet.add(new JobDelimter(jobStartMarker, jobOffsetMarker));
+//                        jobDelimiterSet.add(new JobDelimiter(jobStartMarker, jobOffsetMarker));
 //                        // Reset the jobStartMarker
 //                        jobStartMarker = jobOffsetMarker;
 //                        // Reset number of lines read
@@ -95,7 +95,7 @@ public class PasswordListService {
 //
 //                // If there are left over lines that werent put into the list, put them now
 //                if (numOfLinesRead > 0)
-//                    jobDelimiterSet.add(new JobDelimter(jobStartMarker, jobOffsetMarker));
+//                    jobDelimiterSet.add(new JobDelimiter(jobStartMarker, jobOffsetMarker));
 //
 //                // Save Candidate Value list
 //                passwordListRepository.save(new PasswordList(s3ListItem.substring(s3ListItem.lastIndexOf("/") + 1), null, jobDelimiterSet));
@@ -110,6 +110,10 @@ public class PasswordListService {
     public PasswordList get(String name) {
         return passwordListRepository.findById(name)
                 .orElseThrow(() -> new SystemException(2342, "Could not find Candidate Value List", Status.NOT_FOUND));
+    }
+
+    public PasswordList getOrNull(String name){
+        return passwordListRepository.getOne(name);
     }
 
 

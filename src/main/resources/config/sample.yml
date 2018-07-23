@@ -64,7 +64,7 @@ application:
       security:
           jwt-token-signing-key: { REPLACE }
           jwt-token-validity-in-milliseconds: 8000000
-      candidate-value-list-settings:
+      password-list-settings:
           folder-prefix: { REPLACE }
           job-size: 200000
       kraken-request-settings:

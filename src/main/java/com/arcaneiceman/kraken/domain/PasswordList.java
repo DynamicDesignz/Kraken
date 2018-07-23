@@ -1,12 +1,14 @@
 package com.arcaneiceman.kraken.domain;
 
-import com.arcaneiceman.kraken.domain.embedded.JobDelimter;
+import com.arcaneiceman.kraken.domain.embedded.JobDelimiter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.springframework.core.annotation.Order;
 
 import javax.persistence.*;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -33,5 +35,6 @@ public class PasswordList {
 
     @JsonIgnore
     @ElementCollection
-    private Set<JobDelimter> jobDelimiterSet;
+    @OrderBy("indexNumber")
+    private List<JobDelimiter> jobDelimiterSet;
 }

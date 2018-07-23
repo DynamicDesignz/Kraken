@@ -73,10 +73,19 @@ public class RequestIO {
 
             RequestDetail requestDetail;
 
-            String jobId;
+            Long listId;
+
+            Integer jobIndexNumber;
 
             List<String> candidateValues;
         }
 
+    }
+
+    public static class ReportJob {
+
+        public static class Request{
+
+        }
     }
 }
