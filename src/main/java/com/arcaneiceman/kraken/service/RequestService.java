@@ -6,6 +6,7 @@ import com.arcaneiceman.kraken.domain.TrackedCrunchList;
 import com.arcaneiceman.kraken.domain.TrackedPasswordList;
 import com.arcaneiceman.kraken.domain.User;
 import com.arcaneiceman.kraken.domain.abs.RequestDetail;
+import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.embedded.Job;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
@@ -24,24 +25,18 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.zalando.problem.Status.BAD_REQUEST;
-import static org.zalando.problem.Status.FOUND;
+import static org.zalando.problem.Status.NOT_FOUND;
 import static org.zalando.problem.Status.NO_CONTENT;
 
 @Service
 @Transactional
 public class RequestService {
 
-    @Value("${application.kraken-request-settings.folder-prefix}")
-    private String passwordCaptureStoragePath;
-
-    @Value("${application.candidate-value-list-settings.folder-prefix}")
-    private String candidateValueListStoragePath;
-
     private UserService userService;
-    private AmazonS3Configuration amazonS3Configuration;
-    private PasswordListService passwordListService;
     private RequestPermissionLayer requestPermissionLayer;
     private RequestRepository requestRepository;
     private WPARequestDetailService wpaRequestDetailService;
@@ -50,8 +45,6 @@ public class RequestService {
     private TrackedCrunchListService trackedCrunchListService;
 
     public RequestService(UserService userService,
-                          AmazonS3Configuration amazonS3Configuration,
-                          PasswordListService passwordListService,
                           RequestPermissionLayer requestPermissionLayer,
                           RequestRepository requestRepository,
                           WPARequestDetailService wpaRequestDetailService,
@@ -59,24 +52,12 @@ public class RequestService {
                           TrackedPasswordListService trackedPasswordListService,
                           TrackedCrunchListService trackedCrunchListService) {
         this.userService = userService;
-        this.amazonS3Configuration = amazonS3Configuration;
-        this.passwordListService = passwordListService;
         this.requestPermissionLayer = requestPermissionLayer;
         this.requestRepository = requestRepository;
         this.wpaRequestDetailService = wpaRequestDetailService;
         this.matchRequestDetailService = matchRequestDetailService;
         this.trackedPasswordListService = trackedPasswordListService;
         this.trackedCrunchListService = trackedCrunchListService;
-    }
-
-    @PostConstruct
-    public void checkValues() {
-        if (candidateValueListStoragePath == null || candidateValueListStoragePath.isEmpty())
-            throw new RuntimeException("Application Request Service - Candidate Value List S3 Path : " +
-                    "Storage Path Not Specified ");
-        if (passwordCaptureStoragePath == null || passwordCaptureStoragePath.isEmpty())
-            throw new RuntimeException("Application Request Service - Capture Fetcher : " +
-                    "Storage Path Not Specified");
     }
 
     public Request createRequest(RequestIO.Create.Request requestDTO,
@@ -93,7 +74,7 @@ public class RequestService {
                         wpaRequestDetailService.create((WPARequestDetail) requestDTO.getRequestDetail(), passwordCaptureFile));
             case MATCH:
                 request.setRequestDetail(
-                        matchRequestDetailService.create((MatchRequestDetail) requestDTO));
+                        matchRequestDetailService.create((MatchRequestDetail) requestDTO.getRequestDetail()));
         }
 
         // Create Tracked Password List
@@ -140,7 +121,9 @@ public class RequestService {
                         return new RequestIO.GetJob.Response(
                                 request.getRequestType(),
                                 getRequestDetail(request),
+                                request.getId(),
                                 trackedPasswordList.getId(),
+                                RequestIO.Common.TrackedListType.PASSWORD_LIST,
                                 job.getIndexNumber(),
                                 job.getValues());
                 }
@@ -155,7 +138,9 @@ public class RequestService {
                         return new RequestIO.GetJob.Response(
                                 request.getRequestType(),
                                 getRequestDetail(request),
+                                request.getId(),
                                 trackedCrunchList.getId(),
+                                RequestIO.Common.TrackedListType.CRUNCH,
                                 job.getIndexNumber(),
                                 job.getValues());
                 }
@@ -177,36 +162,43 @@ public class RequestService {
         throw new SystemException(3242, "No Jobs Available", NO_CONTENT);
     }
 
-    public void reportJob(Long id, String jobId, Boolean success, String password) {
+    public void reportJob(RequestIO.ReportJob.Request requestDTO) {
         User user = userService.getUserOrThrow();
-        Request request = requestPermissionLayer.getWithOwner(id, user);
+        Request request = requestPermissionLayer.getWithOwner(requestDTO.getRequestId(), user);
 
-        if (success) {
-            // Password Found!
-            if (password == null || password.isEmpty())
-                throw new SystemException(32423, "Success report must have a value to report", BAD_REQUEST);
-            // Retire Active Request
-            retireActiveRequest(request.getId());
-            // TODO : Email Password Found
-        } else {
-            // Job Complete. Password was not found... Mark Job as Complete
-            TrackedJob trackedJob = trackedPasswordListJobService.getTrackedJob(request, jobId);
-            switch (trackedJob.getStatus()) {
-                case PENDING:
-                    throw new SystemException(342, "Tracked Job has pending status and cannot be completed!", BAD_REQUEST);
-                case COMPLETE:
-                    throw new SystemException(342, "Tracked Job has complete status and cannot be completed!", BAD_REQUEST);
-                case ERROR:
-                    throw new SystemException(342, "Tracked Job has error status and cannot be completed!", BAD_REQUEST);
+        // If success
+        if (requestDTO.getResult() != null && !requestDTO.getResult().isEmpty()){
+            // TODO Found Password, Kill Request
+        }
+        // Else
+        else
+            switch (requestDTO.getTrackedListType()){
+                case CRUNCH:
+                    TrackedCrunchList trackedCrunchList = request.getTrackedCrunchLists().stream()
+                            .filter(list -> Objects.equals(list.getId(), requestDTO.getListId()))
+                            .findFirst()
+                            .orElseThrow(() -> new SystemException(32,
+                                    "Crunch List with id " + requestDTO.getListId() + " not found", NOT_FOUND));
+                    trackedCrunchListService.reportJob(trackedCrunchList, requestDTO.getJobIndexNumber(), requestDTO.getTrackingStatus());
+                    break;
+                case PASSWORD_LIST:
+                    TrackedPasswordList trackedPasswordList = request.getTrackedPasswordLists().stream()
+                            .filter(list -> Objects.equals(list.getId(), requestDTO.getListId()))
+                            .findFirst()
+                            .orElseThrow(() -> new SystemException(32,
+                                    "Password List with id " + requestDTO.getListId() + " not found", NOT_FOUND));
+                    trackedPasswordListService.reportJob(trackedPasswordList, requestDTO.getJobIndexNumber(), requestDTO.getTrackingStatus());
+                    break;
             }
-            trackedPasswordListJobService.markJobAsComplete(trackedJob);
 
-            // Check if there are more jobs left
-            if (trackedPasswordListJobService.getNextTrackedJobForRequest(request) == null) {
-                // No more Jobs are Left... retire active request
-                retireActiveRequest(request.getId());
-                // TODO : Email Password Not Found
-            }
+        // Check if request is complete
+        if (request.getTrackedPasswordLists().stream()
+                .allMatch(trackedPasswordList -> trackedPasswordList.getStatus() == TrackingStatus.COMPLETE
+                        || trackedPasswordList.getStatus() == TrackingStatus.ERROR) &&
+                request.getTrackedCrunchLists().stream()
+                        .allMatch(trackedCrunchList -> trackedCrunchList.getStatus() == TrackingStatus.COMPLETE
+                                || trackedCrunchList.getStatus() == TrackingStatus.ERROR)) {
+            // TODO : Mark Request As Complete
         }
     }
 
@@ -215,6 +207,10 @@ public class RequestService {
         switch (request.getRequestType()) {
             case WPA:
                 wpaRequestDetailService.delete(id);
+                break;
+            case MATCH:
+                matchRequestDetailService.delete(id);
+                break;
         }
         requestRepository.delete(request);
         // TODO : Move to Completed Request

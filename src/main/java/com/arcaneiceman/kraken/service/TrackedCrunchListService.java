@@ -5,7 +5,6 @@ import com.arcaneiceman.kraken.domain.TrackedCrunchList;
 import com.arcaneiceman.kraken.domain.embedded.Job;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import com.arcaneiceman.kraken.repository.TrackedCrunchListRepository;
-import com.arcaneiceman.kraken.service.permission.abs.TrackedCrunchListPermissionLayer;
 import com.arcaneiceman.kraken.util.ConsoleCommandUtil;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,15 +25,12 @@ import java.util.regex.Pattern;
 public class TrackedCrunchListService {
 
     private TrackedCrunchListRepository trackedCrunchListRepository;
-    private TrackedCrunchListPermissionLayer trackedCrunchListPermissionLayer;
 
     @Value("${application.password-list-settings.job-size}")
     private String jobSize;
 
-    public TrackedCrunchListService(TrackedCrunchListRepository trackedCrunchListRepository,
-                                    TrackedCrunchListPermissionLayer trackedCrunchListPermissionLayer) {
+    public TrackedCrunchListService(TrackedCrunchListRepository trackedCrunchListRepository) {
         this.trackedCrunchListRepository = trackedCrunchListRepository;
-        this.trackedCrunchListPermissionLayer = trackedCrunchListPermissionLayer;
     }
 
     @PostConstruct
@@ -66,17 +62,17 @@ public class TrackedCrunchListService {
                     + minSize + " " + maxSize + " " + characters, Status.BAD_REQUEST);
         // Ceil of [Number of lines / jobSize]
         Integer totalJobs = ((Double) Math.ceil(Double.parseDouble(matcher.group(1)) / Double.parseDouble(jobSize))).intValue();
-        TrackedCrunchList trackedCrunchList = new TrackedCrunchList(null,
-                minSize,
-                maxSize,
-                characters,
-                TrackingStatus.PENDING,
-                totalJobs,
-                startString,
-                0,
-                0,
-                0,
-                new ArrayList<>());
+        TrackedCrunchList trackedCrunchList = new TrackedCrunchList();
+        trackedCrunchList.setStatus(TrackingStatus.PENDING);
+        trackedCrunchList.setMinSize(minSize);
+        trackedCrunchList.setMaxSize(maxSize);
+        trackedCrunchList.setCharacters(characters);
+        trackedCrunchList.setNextJobString(startString);
+        trackedCrunchList.setJobQueue(new ArrayList<>());
+        trackedCrunchList.setTotalJobCount(totalJobs);
+        trackedCrunchList.setCompletedJobCount(0);
+        trackedCrunchList.setErrorJobCount(0);
+        trackedCrunchList.setNextJobIndex(0);
         trackedCrunchList.setOwner(request);
         return trackedCrunchListRepository.save(trackedCrunchList);
     }
@@ -107,7 +103,7 @@ public class TrackedCrunchListService {
 
         // Get Next Job From Crunch
         int nextJobIndex = trackedCrunchList.getNextJobIndex();
-        if (trackedCrunchList.getNextJobIndex() >= trackedCrunchList.getTotalJobs()) {
+        if (trackedCrunchList.getNextJobIndex() >= trackedCrunchList.getTotalJobCount()) {
             // Increment Next Index For Next Run
             trackedCrunchList.setNextJobIndex(trackedCrunchList.getNextJobIndex() + 1);
             // Fetch Candidate Values, Add to Job Queue and return
@@ -159,9 +155,7 @@ public class TrackedCrunchListService {
         return null;
     }
 
-    void reportJob(Long id, Integer jobIndexNumber, TrackingStatus trackingStatus, Request request) {
-        TrackedCrunchList trackedCrunchList = trackedCrunchListPermissionLayer.getWithOwner(id, request);
-
+    void reportJob(TrackedCrunchList trackedCrunchList, Integer jobIndexNumber, TrackingStatus trackingStatus) {
         // Find Running Job with index number
         Job job = trackedCrunchList.getJobQueue().stream()
                 .filter(jobFromStream -> Objects.equals(jobFromStream.getIndexNumber(), jobIndexNumber)
@@ -212,6 +206,6 @@ public class TrackedCrunchListService {
     private boolean checkIfListComplete(TrackedCrunchList trackedCrunchList) {
         // If Complete Jobs + Error Jobs == Total Jobs, this list is complete
         int reportedJobCount = trackedCrunchList.getCompletedJobCount() + trackedCrunchList.getErrorJobCount();
-        return Objects.equals(reportedJobCount, trackedCrunchList.getTotalJobs());
+        return Objects.equals(reportedJobCount, trackedCrunchList.getTotalJobCount());
     }
 }

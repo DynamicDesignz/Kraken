@@ -1,14 +1,14 @@
 package com.arcaneiceman.kraken.controller.io;
 
-import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
+import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
+import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -45,7 +45,7 @@ public class RequestIO {
 
             @Getter
             @NoArgsConstructor
-            public static class CrunchParams{
+            public static class CrunchParams {
 
                 @NotNull
                 private Integer minSize;
@@ -73,7 +73,11 @@ public class RequestIO {
 
             RequestDetail requestDetail;
 
+            Long requestId;
+
             Long listId;
+
+            Common.TrackedListType trackedListType;
 
             Integer jobIndexNumber;
 
@@ -84,8 +88,35 @@ public class RequestIO {
 
     public static class ReportJob {
 
-        public static class Request{
+        @Getter
+        @NoArgsConstructor
+        public static class Request {
 
+            @NotNull
+            Long requestId;
+
+            @NotNull
+            Long listId;
+
+            @NotNull
+            Common.TrackedListType trackedListType;
+
+            @NotNull
+            Integer jobIndexNumber;
+
+            @NotNull
+            TrackingStatus trackingStatus;
+
+            String result;
+
+        }
+    }
+
+    public static class Common {
+
+        public enum TrackedListType{
+            CRUNCH,
+            PASSWORD_LIST
         }
     }
 }

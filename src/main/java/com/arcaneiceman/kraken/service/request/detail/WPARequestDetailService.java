@@ -1,6 +1,5 @@
 package com.arcaneiceman.kraken.service.request.detail;
 
-import com.arcaneiceman.kraken.domain.Request;
 import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.repository.WPARequestDetailRepository;
 import com.arcaneiceman.kraken.service.utils.FileUploadService;

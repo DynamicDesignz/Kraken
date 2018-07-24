@@ -32,7 +32,7 @@ public class RequestController {
             @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile) {
         log.debug("REST Request to create WPA Request");
         return ResponseEntity.created(null).body(
-                requestService.createRequest(requestDTO, passwordCaptureFile, candidateValueLists));
+                requestService.createRequest(requestDTO, passwordCaptureFile));
     }
 
     @GetMapping(value = "/requests/{id}")
@@ -41,20 +41,16 @@ public class RequestController {
         return ResponseEntity.ok(requestService.get(id));
     }
 
-    @PostMapping(value = "/requests/{id}/get-job")
-    public ResponseEntity<RequestIO.GetJob.Response> getJob(@PathVariable Long id) {
-        log.debug("REST Request to get Job for Request : {}", id);
-        return ResponseEntity.ok(requestService.getJob(id));
+    @PostMapping(value = "/requests/get-job")
+    public ResponseEntity<RequestIO.GetJob.Response> getJob() {
+        log.debug("REST Request to get Job");
+        return ResponseEntity.ok(requestService.getJob());
     }
 
     @PostMapping(value = "/requests/{id}/report-job")
-    public ResponseEntity<Void> reportJob(@PathVariable Long id,
-                                          @
-                                          @RequestParam String jobId,
-                                          @RequestParam Boolean success,
-                                          @RequestParam(required = false) String password) {
-        log.debug("REST Request to report Job {} for Request : {}", jobId, id);
-        requestService.reportJob(id, jobId, success, password);
+    public ResponseEntity<Void> reportJob(@RequestBody RequestIO.ReportJob.Request requestDTO) {
+        log.debug("REST Request to report Job");
+        requestService.reportJob(requestDTO);
         return ResponseEntity.ok().build();
     }
 
