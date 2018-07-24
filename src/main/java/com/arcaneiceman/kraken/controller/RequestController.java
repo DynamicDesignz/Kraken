@@ -31,11 +31,11 @@ public class RequestController {
 
     @PostMapping(value = "/requests")
     public ResponseEntity<Request> createWPA(
-            @RequestParam(value = "details") String unserializedRequestDTO,
+            @RequestParam(value = "details") String unmarshalledRequestDTO,
             @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile) throws IOException {
         log.debug("REST Request to create WPA Request");
         return ResponseEntity.created(null).body(requestService.create(
-                new ObjectMapper().readValue(unserializedRequestDTO, RequestIO.Create.Request.class),
+                new ObjectMapper().readValue(unmarshalledRequestDTO, RequestIO.Create.Request.class),
                 passwordCaptureFile));
     }
 

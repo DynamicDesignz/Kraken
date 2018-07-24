@@ -1,6 +1,7 @@
 package com.arcaneiceman.kraken.security.jwt;
 
 import com.arcaneiceman.kraken.config.Constants;
+import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import io.jsonwebtoken.*;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -50,7 +51,10 @@ public class TokenProvider {
         return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
     }
 
-    public String createToken(String username, Authentication authentication) {
+    public String createToken(String username,
+                              String workerName,
+                              WorkerType workerType,
+                              Authentication authentication) {
 
         Map<String, Object> claims = new HashMap<>();
 
@@ -64,6 +68,14 @@ public class TokenProvider {
                 .collect(Collectors.joining(":"));
         claims.put(Constants.AUTHORITIES_KEY, authorities);
 
+        // Worker Name
+        if (workerName != null)
+            claims.put(Constants.WORKER_NAME, workerName);
+
+        // Worker Type
+        if (workerType != null)
+            claims.put(Constants.WORKER_TYPE, workerType);
+
         return Jwts.builder()
                 .setClaims(claims)
                 .signWith(SignatureAlgorithm.HS512, secretKey)
@@ -71,6 +83,10 @@ public class TokenProvider {
                 .setIssuedAt(now)
                 .setSubject(username)
                 .compact();
+    }
+
+    public String createToken(String username, Authentication authentication){
+        return createToken(username, null, null, authentication);
     }
 
     public boolean validateToken(String authToken) {

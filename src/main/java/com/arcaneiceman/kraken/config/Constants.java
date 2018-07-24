@@ -7,6 +7,8 @@ public class Constants {
      */
     public static final String AUTHORITIES_KEY = "auth";
     public static final String BLACKLIST_DIGEST_KEY = "blacklist_digest";
+    public static final String WORKER_NAME = "worker_name";
+    public static final String WORKER_TYPE = "worker_type";
 
     /**
      * Aircrack Responses

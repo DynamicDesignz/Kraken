@@ -37,4 +37,18 @@ public class WorkerIO {
         }
     }
 
+    public static class Logout {
+
+        @Getter
+        @NoArgsConstructor
+        public static class Request {
+
+            @NotNull
+            private WorkerType workerType;
+
+            @NotBlank
+            private String workerName;
+        }
+    }
+
 }
