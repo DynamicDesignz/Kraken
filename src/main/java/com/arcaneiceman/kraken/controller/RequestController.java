@@ -4,12 +4,15 @@ import com.arcaneiceman.kraken.controller.io.RequestIO;
 import com.arcaneiceman.kraken.domain.Request;
 import com.arcaneiceman.kraken.security.AuthoritiesConstants;
 import com.arcaneiceman.kraken.service.RequestService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 /**
  * Created by Wali on 4/1/2018.
@@ -27,12 +30,13 @@ public class RequestController {
     }
 
     @PostMapping(value = "/requests")
-    public ResponseEntity<Request> create(
-            @RequestBody RequestIO.Create.Request requestDTO,
-            @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile) {
+    public ResponseEntity<Request> createWPA(
+            @RequestParam(value = "details") String unserializedRequestDTO,
+            @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile) throws IOException {
         log.debug("REST Request to create WPA Request");
-        return ResponseEntity.created(null).body(
-                requestService.createRequest(requestDTO, passwordCaptureFile));
+        return ResponseEntity.created(null).body(requestService.create(
+                new ObjectMapper().readValue(unserializedRequestDTO, RequestIO.Create.Request.class),
+                passwordCaptureFile));
     }
 
     @GetMapping(value = "/requests/{id}")

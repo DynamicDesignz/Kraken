@@ -31,7 +31,7 @@ public class TrackedPasswordListService {
     private AmazonS3Configuration amazonS3Configuration;
     private PasswordListService passwordListService;
 
-    @Value("${application.candidate-value-list-settings.folder-prefix}")
+    @Value("${application.password-list-settings.folder-prefix}")
     private String candidateValueListStoragePath;
 
     public TrackedPasswordListService(TrackedPasswordListRepository trackedPasswordListRepository,
@@ -46,14 +46,14 @@ public class TrackedPasswordListService {
     public void checkValues() {
         if (candidateValueListStoragePath == null || candidateValueListStoragePath.isEmpty())
             throw new RuntimeException("Application Tracked Password List Service - " +
-                    "Candidate Value List S3 Path : Storage Path Not Specified ");
+                    "Password List S3 Path : Storage Path Not Specified ");
     }
 
     TrackedPasswordList create(String passwordListName, Request request) {
         PasswordList passwordList = passwordListService.get(passwordListName);
         if (passwordList == null)
             throw new SystemException(23423,
-                    "Candidate Value List with name " + passwordListName + " not found", Status.NOT_FOUND);
+                    "Password List with name " + passwordListName + " not found", Status.NOT_FOUND);
         TrackedPasswordList trackedPasswordList = new TrackedPasswordList();
         trackedPasswordList.setPasswordListName(passwordList.getName());
         trackedPasswordList.setStatus(TrackingStatus.PENDING);

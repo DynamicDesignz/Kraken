@@ -66,9 +66,10 @@ application:
           jwt-token-validity-in-milliseconds: 8000000
       password-list-settings:
           folder-prefix: { REPLACE }
-          job-size: 200000
       kraken-request-settings:
           folder-prefix: { REPLACE }
+      general:
+          job-size: 200000
 
 amazon:
     region: US_WEST_1

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface RequestRepository extends JpaRepository<Request, String> {
+public interface RequestRepository extends JpaRepository<Request, Long> {
 
     List<Request> findByOwner(User user);
 }

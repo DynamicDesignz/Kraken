@@ -21,10 +21,21 @@ public class WorkerController {
     private static Logger log = LoggerFactory.getLogger(WorkerController.class);
     private WorkerService workerService;
 
-    @PostMapping(value = "/worker/register")
-    public ResponseEntity<Worker> register(@RequestBody WorkerIO.Create.Request requestDTO) {
-        log.debug("REST Request to register Worker Request");
-        return ResponseEntity.created(workerService.create(requestDTO));
+    public WorkerController(WorkerService workerService) {
+        this.workerService = workerService;
+    }
+
+    @PostMapping(value = "/worker")
+    public ResponseEntity<Worker> create(@RequestBody WorkerIO.Create.Request requestDTO) {
+        log.debug("REST Request for Worker Create");
+        return ResponseEntity.created(null).body(workerService.create(requestDTO));
+    }
+
+    @PostMapping(value = "/worker/heartbeat")
+    public ResponseEntity<Void> register(@RequestBody WorkerIO.Heartbeat.Request requestDTO) {
+        log.debug("REST Request for Worker Heartbeat");
+        workerService.heartbeat(requestDTO);
+        return ResponseEntity.ok().build();
     }
 
 

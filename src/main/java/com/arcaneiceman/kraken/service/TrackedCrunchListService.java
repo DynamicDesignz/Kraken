@@ -26,7 +26,7 @@ public class TrackedCrunchListService {
 
     private TrackedCrunchListRepository trackedCrunchListRepository;
 
-    @Value("${application.password-list-settings.job-size}")
+    @Value("${application.general.job-size}")
     private String jobSize;
 
     public TrackedCrunchListService(TrackedCrunchListRepository trackedCrunchListRepository) {

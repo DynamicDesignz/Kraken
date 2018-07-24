@@ -37,9 +37,9 @@ public class WorkerService {
         return workerRepository.getOne(new WorkerPK(workerName, workerType, user.getId()));
     }
 
-    public void register(String workerName, WorkerType workerType) {
+    public void heartbeat(WorkerIO.Heartbeat.Request requestDTO) {
         User user = userService.getUserOrThrow();
-        Worker worker = workerRepository.getOne(new WorkerPK(workerName, workerType, user.getId()));
+        Worker worker = workerRepository.getOne(new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId()));
         worker.setStatus(WorkerStatus.ONLINE);
         worker.setLastCheckIn(new Date());
         workerRepository.save(worker);

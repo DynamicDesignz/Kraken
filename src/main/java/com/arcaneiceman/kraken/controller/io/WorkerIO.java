@@ -22,4 +22,19 @@ public class WorkerIO {
             private String workerName;
         }
     }
+
+    public static class Heartbeat {
+
+        @Getter
+        @NoArgsConstructor
+        public static class Request {
+
+            @NotNull
+            private WorkerType workerType;
+
+            @NotBlank
+            private String workerName;
+        }
+    }
+
 }

@@ -8,6 +8,7 @@ import com.arcaneiceman.kraken.domain.User;
 import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.embedded.Job;
+import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
 import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
@@ -60,8 +61,7 @@ public class RequestService {
         this.trackedCrunchListService = trackedCrunchListService;
     }
 
-    public Request createRequest(RequestIO.Create.Request requestDTO,
-                                 MultipartFile passwordCaptureFile) {
+    public Request create(RequestIO.Create.Request requestDTO, MultipartFile passwordCaptureFile) {
         User user = userService.getUserOrThrow();
         // Init Request
         Request request = requestRepository.save(new Request());
@@ -72,9 +72,13 @@ public class RequestService {
             case WPA:
                 request.setRequestDetail(
                         wpaRequestDetailService.create((WPARequestDetail) requestDTO.getRequestDetail(), passwordCaptureFile));
+                request.setRequestType(RequestType.WPA);
+                break;
             case MATCH:
                 request.setRequestDetail(
                         matchRequestDetailService.create((MatchRequestDetail) requestDTO.getRequestDetail()));
+                request.setRequestType(RequestType.MATCH);
+                break;
         }
 
         // Create Tracked Password List
@@ -101,6 +105,7 @@ public class RequestService {
     public Request get(Long id) {
         User user = userService.getUserOrThrow();
         Request request = requestPermissionLayer.getWithOwner(id, user);
+        request.setRequestDetail(getRequestDetail(request));
         request.getTrackedPasswordLists().size();
         request.getTrackedCrunchLists().size();
         return request;
