@@ -2,10 +2,12 @@ package com.arcaneiceman.kraken.domain;
 
 import com.arcaneiceman.kraken.domain.abs.MtoOPermissionEntity;
 import com.arcaneiceman.kraken.domain.abs.RequestDetail;
+import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Table(name = "request")
 @Entity
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class Request extends MtoOPermissionEntity<User> {
 
     private static final long serialVersionUID = 1L;
@@ -37,11 +40,6 @@ public class Request extends MtoOPermissionEntity<User> {
     @JsonIgnore
     @OrderBy("id")
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TrackedPasswordList> trackedPasswordLists;
-
-    @JsonIgnore
-    @OrderBy("id")
-    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY, cascade =  CascadeType.ALL, orphanRemoval = true)
-    private List<TrackedCrunchList> trackedCrunchLists;
+    private List<TrackedList> trackedLists;
 
 }

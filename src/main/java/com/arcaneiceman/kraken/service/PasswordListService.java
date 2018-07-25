@@ -1,6 +1,7 @@
 package com.arcaneiceman.kraken.service;
 
 import com.arcaneiceman.kraken.domain.PasswordList;
+import com.arcaneiceman.kraken.domain.embedded.JobDelimiter;
 import com.arcaneiceman.kraken.repository.PasswordListRepository;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
 import org.springframework.data.domain.Page;
@@ -109,12 +110,17 @@ public class PasswordListService {
 
     public PasswordList get(String name) {
         return passwordListRepository.findById(name)
-                .orElseThrow(() -> new SystemException(2342, "Could not find Candidate Value List", Status.NOT_FOUND));
+                .orElseThrow(() -> new SystemException(2342, "Could not find Password List", Status.NOT_FOUND));
     }
 
     public PasswordList getOrNull(String name){
         return passwordListRepository.getOne(name);
     }
 
+    public JobDelimiter getJobDelimiterForPasswordList(String name, Integer jobDelimiterIndexNumber){
+        PasswordList passwordList = passwordListRepository.findById(name)
+                .orElseThrow(() -> new SystemException(2342, "Could not find Password List", Status.NOT_FOUND));
+        return passwordList.getJobDelimiterSet().get(jobDelimiterIndexNumber);
+    }
 
 }

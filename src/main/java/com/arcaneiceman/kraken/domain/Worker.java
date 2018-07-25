@@ -29,4 +29,7 @@ public class Worker extends MtoOPermissionEntity<User> {
     @Column
     private Date lastCheckIn;
 
+    @OneToOne(fetch = FetchType.EAGER)
+    private Job job;
+
 }

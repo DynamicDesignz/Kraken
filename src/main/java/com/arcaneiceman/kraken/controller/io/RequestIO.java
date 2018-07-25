@@ -77,9 +77,7 @@ public class RequestIO {
 
             Long listId;
 
-            Common.TrackedListType trackedListType;
-
-            Integer jobIndexNumber;
+            String jobId;
 
             List<String> candidateValues;
         }
@@ -99,10 +97,7 @@ public class RequestIO {
             Long listId;
 
             @NotNull
-            Common.TrackedListType trackedListType;
-
-            @NotNull
-            Integer jobIndexNumber;
+            String jobId;
 
             @NotNull
             TrackingStatus trackingStatus;
@@ -111,11 +106,4 @@ public class RequestIO {
         }
     }
 
-    public static class Common {
-
-        public enum TrackedListType{
-            CRUNCH,
-            PASSWORD_LIST
-        }
-    }
 }

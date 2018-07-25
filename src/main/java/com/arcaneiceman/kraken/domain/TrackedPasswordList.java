@@ -1,7 +1,6 @@
 package com.arcaneiceman.kraken.domain;
 
 import com.arcaneiceman.kraken.domain.abs.TrackedList;
-import com.arcaneiceman.kraken.domain.embedded.Job;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -20,9 +19,4 @@ public class TrackedPasswordList extends TrackedList {
 
     @Column
     private String passwordListName;
-
-    @JsonIgnore
-    @Embedded
-    @OrderBy("indexNumber")
-    private List<Job> jobQueue;
 }
