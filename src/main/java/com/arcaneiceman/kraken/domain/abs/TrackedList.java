@@ -14,6 +14,7 @@ import java.util.List;
 @Setter
 @EqualsAndHashCode(callSuper = false, of = "id")
 @Entity
+@Table(name = "tracked_lists")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public abstract class TrackedList extends MtoOPermissionEntity<Request> {
 

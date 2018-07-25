@@ -1,6 +1,7 @@
 package com.arcaneiceman.kraken.controller.io;
 
 import com.arcaneiceman.kraken.domain.User;
+import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -78,6 +79,38 @@ public class AccountIO {
             @NotBlank
             @Size(min = PASSWORD_MIN_LENGTH, max = PASSWORD_MAX_LENGTH)
             private String password;
+        }
+
+        @Getter
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class Response {
+
+            private String token;
+        }
+
+    }
+
+    public static class AuthenticateWorker {
+
+        @Getter
+        @NoArgsConstructor
+        public static class Request {
+
+            @NotBlank
+            @Email
+            @Size(min = 1, max = 50)
+            private String login;
+
+            @NotBlank
+            @Size(min = PASSWORD_MIN_LENGTH, max = PASSWORD_MAX_LENGTH)
+            private String password;
+
+            @NotBlank
+            private WorkerType workerType;
+
+            @NotBlank
+            private String workerName;
         }
 
         @Getter

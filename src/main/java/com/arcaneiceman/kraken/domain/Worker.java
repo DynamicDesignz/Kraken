@@ -15,7 +15,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Getter
 @Setter
-@Table(name = "worker")
+@Table(name = "workers")
 @Entity
 public class Worker extends MtoOPermissionEntity<User> {
 

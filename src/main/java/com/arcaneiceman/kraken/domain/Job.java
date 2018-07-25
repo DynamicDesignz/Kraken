@@ -20,7 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Embeddable
-@Table(name = "job")
+@Table(name = "jobs")
 @Entity
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class Job extends MtoOPermissionEntity<TrackedList>{

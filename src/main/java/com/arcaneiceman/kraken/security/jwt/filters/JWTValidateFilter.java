@@ -22,8 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import static com.arcaneiceman.kraken.config.Constants.AUTHORITIES_KEY;
-import static com.arcaneiceman.kraken.config.Constants.BLACKLIST_DIGEST_KEY;
+import static com.arcaneiceman.kraken.config.Constants.*;
 
 
 /**
@@ -68,6 +67,12 @@ public class JWTValidateFilter extends GenericFilterBean {
             String createdAt = claims.getIssuedAt().toString();
             String username = claims.getSubject();
             servletRequest.setAttribute(BLACKLIST_DIGEST_KEY, DigestUtils.md5DigestAsHex((username + createdAt).getBytes()));
+
+            // Add Worker Type
+            servletRequest.setAttribute(WORKER_TYPE, claims.get(WORKER_TYPE));
+
+            // Add Worker Name
+            servletRequest.setAttribute(WORKER_NAME, claims.get(WORKER_NAME));
         }
         filterChain.doFilter(servletRequest, servletResponse);
     }

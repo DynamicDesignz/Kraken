@@ -37,7 +37,8 @@ public class TokenProvider {
     private long tokenValidityInMilliseconds;
 
     @Autowired
-    public TokenProvider() { }
+    public TokenProvider() {
+    }
 
     @PostConstruct
     public void verifyVariables() {
@@ -52,9 +53,9 @@ public class TokenProvider {
     }
 
     public String createToken(String username,
+                              Authentication authentication,
                               String workerName,
-                              WorkerType workerType,
-                              Authentication authentication) {
+                              WorkerType workerType) {
 
         Map<String, Object> claims = new HashMap<>();
 
@@ -85,8 +86,8 @@ public class TokenProvider {
                 .compact();
     }
 
-    public String createToken(String username, Authentication authentication){
-        return createToken(username, null, null, authentication);
+    public String createToken(String username, Authentication authentication) {
+        return createToken(username, authentication, null, null);
     }
 
     public boolean validateToken(String authToken) {

@@ -7,8 +7,6 @@ import com.arcaneiceman.kraken.domain.embedded.WorkerPK;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerStatus;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import com.arcaneiceman.kraken.repository.WorkerRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -51,7 +49,7 @@ public class WorkerService {
         workerRepository.save(worker);
     }
 
-    public void logout(WorkerIO.Logout.Request requestDTO){
+    public void logout(WorkerIO.Logout.Request requestDTO) {
         User user = userService.getUserOrThrow();
         Worker worker = workerRepository.getOne(new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId()));
         worker.setStatus(WorkerStatus.OFFLINE);

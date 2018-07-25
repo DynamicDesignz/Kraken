@@ -4,10 +4,12 @@ import com.arcaneiceman.kraken.controller.io.RequestIO;
 import com.arcaneiceman.kraken.domain.Job;
 import com.arcaneiceman.kraken.domain.Request;
 import com.arcaneiceman.kraken.domain.User;
+import com.arcaneiceman.kraken.domain.Worker;
 import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
+import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
 import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.repository.RequestRepository;
@@ -19,8 +21,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
+import static com.arcaneiceman.kraken.config.Constants.WORKER_NAME;
+import static com.arcaneiceman.kraken.config.Constants.WORKER_TYPE;
 import static org.zalando.problem.Status.NO_CONTENT;
 
 @Service
@@ -28,6 +33,7 @@ import static org.zalando.problem.Status.NO_CONTENT;
 public class RequestService {
 
     private UserService userService;
+    private WorkerService workerService;
     private RequestPermissionLayer requestPermissionLayer;
     private RequestRepository requestRepository;
     private WPARequestDetailService wpaRequestDetailService;
@@ -35,12 +41,13 @@ public class RequestService {
     private TrackedListService trackedListService;
 
     public RequestService(UserService userService,
-                          RequestPermissionLayer requestPermissionLayer,
+                          WorkerService workerService, RequestPermissionLayer requestPermissionLayer,
                           RequestRepository requestRepository,
                           WPARequestDetailService wpaRequestDetailService,
                           MatchRequestDetailService matchRequestDetailService,
                           TrackedListService trackedListService) {
         this.userService = userService;
+        this.workerService = workerService;
         this.requestPermissionLayer = requestPermissionLayer;
         this.requestRepository = requestRepository;
         this.wpaRequestDetailService = wpaRequestDetailService;
@@ -93,16 +100,18 @@ public class RequestService {
         return request;
     }
 
-    public RequestIO.GetJob.Response getJob() {
+    public RequestIO.GetJob.Response getJob(HttpServletRequest httpServletRequest) {
         User user = userService.getUserOrThrow();
+        String workerName = (String) httpServletRequest.getAttribute(WORKER_NAME);
+        WorkerType workerType = (WorkerType) httpServletRequest.getAttribute(WORKER_TYPE);
+        Worker worker = workerService.get(workerName, workerType);
         // Get All Requests
         List<Request> requestList = requestRepository.findByOwner(user);
 
-        // TODO : WORKER
         for (Request request : requestList) {
             for (TrackedList trackedList : request.getTrackedLists()) {
                 if (trackedList.getStatus() == TrackingStatus.PENDING) {
-                    Job job = trackedListService.getNextJob(trackedList, null);
+                    Job job = trackedListService.getNextJob(trackedList, worker);
                     if (job != null)
                         return new RequestIO.GetJob.Response(
                                 request.getRequestType(),
@@ -114,9 +123,7 @@ public class RequestService {
                 }
             }
 
-
-            // No jobs to dispatch from trackedCrunchListEither
-            // If all trackedPasswordLists and all trackedCrunchLists are either ERROR or COMPLETE
+            // No jobs to dispatch from trackedLists.... check if all are either ERROR or COMPLETE
             if (request.getTrackedLists().stream().allMatch(trackedList ->
                     trackedList.getStatus() == TrackingStatus.COMPLETE
                             || trackedList.getStatus() == TrackingStatus.ERROR)) {
@@ -133,7 +140,7 @@ public class RequestService {
         Request request = requestPermissionLayer.getWithOwner(requestDTO.getRequestId(), user);
 
         if (requestDTO.getResult() != null && !requestDTO.getResult().isEmpty()) {
-            // TODO Found Password, Kill Request
+            // TODO : Mark Request As Complete
         }
         else
             trackedListService.reportJob(requestDTO.getListId(), requestDTO.getJobId(),
