@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.arcaneiceman.kraken.domain.*;
 import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.embedded.JobDelimiter;
+import com.arcaneiceman.kraken.domain.enumerations.ListType;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import com.arcaneiceman.kraken.repository.TrackedListRepository;
 import com.arcaneiceman.kraken.service.permission.abs.TrackedListPermissionLayer;
@@ -100,6 +101,7 @@ public class TrackedListService {
         trackedCrunchList.setCompletedJobCount(0);
         trackedCrunchList.setErrorJobCount(0);
         trackedCrunchList.setNextJobIndex(0);
+        trackedCrunchList.setListType(ListType.CRUNCH);
         trackedCrunchList.setOwner(request);
         return trackedListRepository.save(trackedCrunchList);
     }
@@ -117,6 +119,7 @@ public class TrackedListService {
         trackedPasswordList.setErrorJobCount(0);
         trackedPasswordList.setNextJobIndex(0);
         trackedPasswordList.setJobQueue(new ArrayList<>());
+        trackedPasswordList.setListType(ListType.PASSWORD_LIST);
         trackedPasswordList.setOwner(request);
         return trackedListRepository.save(trackedPasswordList);
     }
@@ -157,7 +160,7 @@ public class TrackedListService {
                         TrackedPasswordList trackedPasswordList = (TrackedPasswordList) trackedList;
                         // Get Job Delimiter
                         JobDelimiter jobDelimiter = passwordListService.getJobDelimiterForPasswordList(
-                                trackedPasswordList.getPasswordListName(), trackedList.getNextJobIndex());
+                                trackedPasswordList.getPasswordListName(), nextJobIndex);
                         // Mark Start and End
                         start = Long.toString(jobDelimiter.getStartByte());
                         end = Long.toString(jobDelimiter.getEndByte());
@@ -179,6 +182,7 @@ public class TrackedListService {
 
                 // Create Job and add to job queue
                 Job job = jobService.create(nextJobIndex, start, end, worker, trackedList);
+                worker.setJob(job);
                 trackedList.getJobQueue().add(job);
                 if (trackedList.getStatus() != TrackingStatus.RUNNING)
                     trackedList.setStatus(TrackingStatus.RUNNING);
@@ -215,7 +219,7 @@ public class TrackedListService {
                     throw new Exception("Password List Missing");
                 GetObjectRequest getObjectRequest = new GetObjectRequest(amazonS3Configuration.getAmazonS3BucketName(),
                         candidateValueListStoragePath + "/" + passwordList.getName());
-                getObjectRequest.setRange(Long.getLong(start), Long.getLong(end));
+                getObjectRequest.setRange(Long.parseLong(start), Long.parseLong(end));
                 S3Object object = amazonS3Configuration.generateClient().getObject(getObjectRequest);
                 InputStream fileStream = new BufferedInputStream(object.getObjectContent());
                 InputStreamReader decoder = new InputStreamReader(fileStream, passwordList.getCharset());
@@ -241,9 +245,17 @@ public class TrackedListService {
         return candidateValues;
     }
 
-    void reportJob(Long trackedListId, String jobId, TrackingStatus trackingStatus, Request request) {
+    void reportJob(Long trackedListId, String jobId, TrackingStatus trackingStatus, Worker worker, Request request) {
         TrackedList trackedList = trackedListPermissionLayer.getWithOwner(trackedListId, request);
         Job job = jobService.get(jobId, trackedList);
+
+        // Remove association between job and worker
+        if (!worker.getJob().equals(job))
+            throw new SystemException(2342, "This worker was not running reported job", Status.BAD_REQUEST);
+        else {
+            worker.setJob(null);
+            job.setWorker(null);
+        }
 
         // Based on tracking status
         switch (trackingStatus) {

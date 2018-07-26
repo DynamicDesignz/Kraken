@@ -25,9 +25,6 @@ import java.util.Set;
 public class PasswordList {
 
     @Id
-    private Long id;
-
-    @Column
     private String name;
 
     @Column

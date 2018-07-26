@@ -47,14 +47,6 @@ public class AccountController {
     }
 
     @Validated
-    @PostMapping(value = "/authenticate/worker")
-    public ResponseEntity<AccountIO.AuthenticateWorker.Response> authenticateWorker(
-            @Valid @RequestBody AccountIO.AuthenticateWorker.Request requestDTO) {
-        log.debug("REST request to authenticate user account");
-        return ResponseEntity.ok(accountService.authenticateWorker(requestDTO));
-    }
-
-    @Validated
     @PostMapping(value = "/refresh")
     @Secured({AuthoritiesConstants.CONSUMER, AuthoritiesConstants.ADMIN})
     public ResponseEntity<AccountIO.Refresh.Response> refresh(HttpServletRequest request) {

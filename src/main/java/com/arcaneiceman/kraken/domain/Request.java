@@ -5,6 +5,8 @@ import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -41,5 +43,20 @@ public class Request extends MtoOPermissionEntity<User> {
     @OrderBy("id")
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TrackedList> trackedLists;
+
+    @JsonSerialize
+    @Transient
+    private Integer totalJobCount;
+
+    @JsonSerialize
+    @JsonDeserialize
+    @Transient
+    private Integer errorJobCount;
+
+    @JsonSerialize
+    @JsonDeserialize
+    @Transient
+    private Integer completedJobCount;
+
 
 }

@@ -27,6 +27,9 @@ public class Job extends MtoOPermissionEntity<TrackedList>{
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Using synthetic key to avoid repeating data
+     */
     @Id
     private String id;
 

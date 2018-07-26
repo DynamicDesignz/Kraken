@@ -1,6 +1,5 @@
 package com.arcaneiceman.kraken.domain;
 
-import com.arcaneiceman.kraken.domain.abs.MtoOPermissionEntity;
 import com.arcaneiceman.kraken.domain.embedded.WorkerPK;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerStatus;
 import lombok.AllArgsConstructor;
@@ -17,8 +16,10 @@ import java.util.Date;
 @Setter
 @Table(name = "workers")
 @Entity
-public class Worker extends MtoOPermissionEntity<User> {
-
+public class Worker {
+    /**
+     * Composite PK because we query {@link Worker} through workerName and workerType
+     */
     @EmbeddedId
     private WorkerPK id;
 
@@ -29,7 +30,7 @@ public class Worker extends MtoOPermissionEntity<User> {
     @Column
     private Date lastCheckIn;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.LAZY)
     private Job job;
 
 }

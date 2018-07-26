@@ -9,6 +9,7 @@ import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
+import com.arcaneiceman.kraken.domain.enumerations.WorkerStatus;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
 import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
@@ -26,7 +27,7 @@ import java.util.List;
 
 import static com.arcaneiceman.kraken.config.Constants.WORKER_NAME;
 import static com.arcaneiceman.kraken.config.Constants.WORKER_TYPE;
-import static org.zalando.problem.Status.NO_CONTENT;
+import static org.zalando.problem.Status.BAD_REQUEST;
 
 @Service
 @Transactional
@@ -96,21 +97,26 @@ public class RequestService {
         User user = userService.getUserOrThrow();
         Request request = requestPermissionLayer.getWithOwner(id, user);
         request.setRequestDetail(getRequestDetail(request));
-        request.getTrackedLists().size();
+        request.setTotalJobCount(request.getTrackedLists().stream().mapToInt(TrackedList::getTotalJobCount).sum());
+        request.setErrorJobCount(request.getTrackedLists().stream().mapToInt(TrackedList::getErrorJobCount).sum());
+        request.setCompletedJobCount(request.getTrackedLists().stream().mapToInt(TrackedList::getCompletedJobCount).sum());
         return request;
     }
 
     public RequestIO.GetJob.Response getJob(HttpServletRequest httpServletRequest) {
         User user = userService.getUserOrThrow();
-        String workerName = (String) httpServletRequest.getAttribute(WORKER_NAME);
-        WorkerType workerType = (WorkerType) httpServletRequest.getAttribute(WORKER_TYPE);
-        Worker worker = workerService.get(workerName, workerType);
+        Worker worker = workerService.get(httpServletRequest);
+        if (worker.getJob() != null)
+            throw new SystemException(324, "Worker already has job", BAD_REQUEST);
+        if (worker.getStatus() == WorkerStatus.OFFLINE)
+            throw new SystemException(242, "Worker is currently OFFLINE", BAD_REQUEST);
+
         // Get All Requests
         List<Request> requestList = requestRepository.findByOwner(user);
 
         for (Request request : requestList) {
             for (TrackedList trackedList : request.getTrackedLists()) {
-                if (trackedList.getStatus() == TrackingStatus.PENDING) {
+                if (trackedList.getStatus() == TrackingStatus.PENDING || trackedList.getStatus() == TrackingStatus.RUNNING) {
                     Job job = trackedListService.getNextJob(trackedList, worker);
                     if (job != null)
                         return new RequestIO.GetJob.Response(
@@ -128,23 +134,28 @@ public class RequestService {
                     trackedList.getStatus() == TrackingStatus.COMPLETE
                             || trackedList.getStatus() == TrackingStatus.ERROR)) {
                 // TODO : Mark Request As Complete
-                throw new SystemException(2423, "Request with id" + request.getId() + " is complete", NO_CONTENT);
+                throw new SystemException(2423, "Request with id" + request.getId() + " is complete", BAD_REQUEST
+                );
             }
         }
         // No more job exception
-        throw new SystemException(3242, "No Jobs Available", NO_CONTENT);
+        throw new SystemException(3242, "No Jobs Available", BAD_REQUEST);
     }
 
-    public void reportJob(RequestIO.ReportJob.Request requestDTO) {
+    public void reportJob(RequestIO.ReportJob.Request requestDTO, HttpServletRequest httpServletRequest) {
         User user = userService.getUserOrThrow();
         Request request = requestPermissionLayer.getWithOwner(requestDTO.getRequestId(), user);
+        Worker worker = workerService.get(httpServletRequest);
+        if (worker.getJob() == null)
+            throw new SystemException(324, "Worker does not have a job to report", BAD_REQUEST);
+        if (worker.getStatus() == WorkerStatus.OFFLINE)
+            throw new SystemException(242, "Worker is currently OFFLINE", BAD_REQUEST);
 
         if (requestDTO.getResult() != null && !requestDTO.getResult().isEmpty()) {
             // TODO : Mark Request As Complete
-        }
-        else
+        } else
             trackedListService.reportJob(requestDTO.getListId(), requestDTO.getJobId(),
-                    requestDTO.getTrackingStatus(), request);
+                    requestDTO.getTrackingStatus(), worker, request);
 
         // Check if request is complete
         if (request.getTrackedLists().stream().allMatch(trackedList ->
@@ -168,12 +179,18 @@ public class RequestService {
         // TODO : Move to Completed Request
     }
 
+    /**
+     * To Resolve any Password Capture Links
+     *
+     * @param request
+     * @return {@RequestDetail}
+     */
     private RequestDetail getRequestDetail(Request request) {
         switch (request.getRequestType()) {
             case WPA:
-                return wpaRequestDetailService.get(request.getId());
+                return wpaRequestDetailService.get(request.getRequestDetail().getId());
             case MATCH:
-                return matchRequestDetailService.get(request.getId());
+                return matchRequestDetailService.get(request.getRequestDetail().getId());
             default:
                 throw new RuntimeException("Request Type was null");
         }

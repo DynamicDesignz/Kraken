@@ -12,6 +12,8 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.io.IOException;
 
 /**
@@ -46,19 +48,20 @@ public class RequestController {
     }
 
     @PostMapping(value = "/requests/get-job")
-    public ResponseEntity<RequestIO.GetJob.Response> getJob() {
+    public ResponseEntity<RequestIO.GetJob.Response> getJob(HttpServletRequest httpServletRequest) {
         log.debug("REST Request to get Job");
-        return ResponseEntity.ok(requestService.getJob());
+        return ResponseEntity.ok(requestService.getJob(httpServletRequest));
     }
 
-    @PostMapping(value = "/requests/{id}/report-job")
-    public ResponseEntity<Void> reportJob(@RequestBody RequestIO.ReportJob.Request requestDTO) {
+    @PostMapping(value = "/requests/report-job")
+    public ResponseEntity<Void> reportJob(@Valid @RequestBody RequestIO.ReportJob.Request requestDTO,
+                                          HttpServletRequest httpServletRequest) {
         log.debug("REST Request to report Job");
-        requestService.reportJob(requestDTO);
+        requestService.reportJob(requestDTO, httpServletRequest);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping(value = "/active-requests/{id}")
+    @DeleteMapping(value = "/requests/{id}")
     public ResponseEntity deleteActiveRequest(@PathVariable Long id) {
         log.debug("REST Request to delete Request : {}", id);
         requestService.retireActiveRequest(id);

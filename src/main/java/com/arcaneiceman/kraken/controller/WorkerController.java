@@ -25,6 +25,12 @@ public class WorkerController {
         this.workerService = workerService;
     }
 
+    @PostMapping(value = "/worker/augment-token")
+    public ResponseEntity<WorkerIO.Augment.Response> augmentToken(@RequestBody WorkerIO.Augment.Request requestDTO){
+        log.debug("Rest Request to Augment Token For Worker Login");
+        return ResponseEntity.ok(workerService.augmentToken(requestDTO));
+    }
+
     @PostMapping(value = "/worker")
     public ResponseEntity<Worker> create(@RequestBody WorkerIO.Create.Request requestDTO) {
         log.debug("REST Request for Worker Create");

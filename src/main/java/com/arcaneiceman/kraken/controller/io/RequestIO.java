@@ -3,6 +3,7 @@ package com.arcaneiceman.kraken.controller.io;
 import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
+import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
 import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -36,6 +37,7 @@ public class RequestIO {
             )
             @JsonSubTypes({
                     @JsonSubTypes.Type(value = WPARequestDetail.class, name = "WPA"),
+                    @JsonSubTypes.Type(value = MatchRequestDetail.class, name = "MATCH")
             })
             private RequestDetail requestDetail;
 

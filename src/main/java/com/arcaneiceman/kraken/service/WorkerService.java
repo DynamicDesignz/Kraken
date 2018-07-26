@@ -7,21 +7,46 @@ import com.arcaneiceman.kraken.domain.embedded.WorkerPK;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerStatus;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import com.arcaneiceman.kraken.repository.WorkerRepository;
+import com.arcaneiceman.kraken.security.jwt.TokenProvider;
+import com.arcaneiceman.kraken.util.exceptions.SystemException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.zalando.problem.Status;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import java.util.Date;
+
+import static com.arcaneiceman.kraken.config.Constants.WORKER_NAME;
+import static com.arcaneiceman.kraken.config.Constants.WORKER_TYPE;
 
 @Service
 @Transactional
 public class WorkerService {
 
     private WorkerRepository workerRepository;
+    private final TokenProvider tokenProvider;
     private UserService userService;
 
-    public WorkerService(WorkerRepository workerRepository, UserService userService) {
+    public WorkerService(WorkerRepository workerRepository, TokenProvider tokenProvider, UserService userService) {
         this.workerRepository = workerRepository;
+        this.tokenProvider = tokenProvider;
         this.userService = userService;
+    }
+
+    public WorkerIO.Augment.Response augmentToken(WorkerIO.Augment.Request requestDTO) {
+        User user = userService.getUserOrThrow();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (!workerRepository.existsById(new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId())))
+            throw new SystemException(452, "Worker with name " + requestDTO.getWorkerName() +
+                    " and type " + requestDTO.getWorkerType() + " not found", Status.NOT_FOUND);
+        String jwt = tokenProvider.createToken(
+                user.getLogin(),
+                authentication,
+                requestDTO.getWorkerName(),
+                requestDTO.getWorkerType());
+        return new WorkerIO.Augment.Response(jwt);
     }
 
     public Worker create(WorkerIO.Create.Request requestDTO) {
@@ -34,7 +59,18 @@ public class WorkerService {
 
     public Worker get(String workerName, WorkerType workerType) {
         User user = userService.getUserOrThrow();
-        return workerRepository.getOne(new WorkerPK(workerName, workerType, user.getId()));
+        return workerRepository.findById(new WorkerPK(workerName, workerType, user.getId()))
+                .orElseThrow(() -> new SystemException(452, "Worker with name " + workerName +
+                        " and type " + workerType + " not found", Status.NOT_FOUND));
+    }
+
+    public Worker get(HttpServletRequest httpServletRequest){
+        User user = userService.getUserOrThrow();
+        String workerName = (String) httpServletRequest.getAttribute(WORKER_NAME);
+        WorkerType workerType = WorkerType.valueOf((String) httpServletRequest.getAttribute(WORKER_TYPE));
+        return workerRepository.findById(new WorkerPK(workerName, workerType, user.getId()))
+                .orElseThrow(() -> new SystemException(452, "Worker with name " + workerName +
+                        " and type " + workerType + " not found", Status.NOT_FOUND));
     }
 
 //    public Page<Worker> get(Pageable pageable){
@@ -43,16 +79,11 @@ public class WorkerService {
 
     public void heartbeat(WorkerIO.Heartbeat.Request requestDTO) {
         User user = userService.getUserOrThrow();
-        Worker worker = workerRepository.getOne(new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId()));
+        Worker worker = workerRepository.findById(
+                new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId()))
+                .orElseThrow(() -> new SystemException(452, "Worker with name " + requestDTO.getWorkerName() +
+                        " and type " + requestDTO.getWorkerName() + " not found", Status.NOT_FOUND));
         worker.setStatus(WorkerStatus.ONLINE);
-        worker.setLastCheckIn(new Date());
-        workerRepository.save(worker);
-    }
-
-    public void logout(WorkerIO.Logout.Request requestDTO) {
-        User user = userService.getUserOrThrow();
-        Worker worker = workerRepository.getOne(new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId()));
-        worker.setStatus(WorkerStatus.OFFLINE);
         worker.setLastCheckIn(new Date());
         workerRepository.save(worker);
     }
