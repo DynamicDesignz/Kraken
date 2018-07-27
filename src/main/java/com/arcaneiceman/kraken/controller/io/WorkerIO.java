@@ -38,6 +38,7 @@ public class WorkerIO {
 
         @Getter
         @NoArgsConstructor
+        @AllArgsConstructor
         public static class Request {
 
             @NotNull

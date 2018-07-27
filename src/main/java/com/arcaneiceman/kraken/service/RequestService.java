@@ -134,6 +134,7 @@ public class RequestService {
                     trackedList.getStatus() == TrackingStatus.COMPLETE
                             || trackedList.getStatus() == TrackingStatus.ERROR)) {
                 // TODO : Mark Request As Complete
+                retireActiveRequest(request.getId());
                 throw new SystemException(2423, "Request with id" + request.getId() + " is complete", BAD_REQUEST
                 );
             }
@@ -153,6 +154,7 @@ public class RequestService {
 
         if (requestDTO.getResult() != null && !requestDTO.getResult().isEmpty()) {
             // TODO : Mark Request As Complete
+            retireActiveRequest(request.getId());
         } else
             trackedListService.reportJob(requestDTO.getListId(), requestDTO.getJobId(),
                     requestDTO.getTrackingStatus(), worker, request);
@@ -162,6 +164,7 @@ public class RequestService {
                 trackedList.getStatus() == TrackingStatus.COMPLETE
                         || trackedList.getStatus() == TrackingStatus.ERROR)) {
             // TODO : Mark Request As Complete
+            retireActiveRequest(request.getId());
         }
     }
 

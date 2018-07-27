@@ -24,6 +24,7 @@ public class RequestIO {
 
         @Getter
         @NoArgsConstructor
+        @AllArgsConstructor
         public static class Request {
 
             @NotNull
@@ -47,6 +48,7 @@ public class RequestIO {
 
             @Getter
             @NoArgsConstructor
+            @AllArgsConstructor
             public static class CrunchParams {
 
                 @NotNull
@@ -90,6 +92,7 @@ public class RequestIO {
 
         @Getter
         @NoArgsConstructor
+        @AllArgsConstructor
         public static class Request {
 
             @NotNull
