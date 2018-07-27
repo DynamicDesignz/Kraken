@@ -1,23 +1,21 @@
-FROM openjdk:8-jre-alpine
+FROM openjdk:8-jre
 
 # Add a temporary volume
 VOLUME /tmp
 
 # Add Aircrack
-RUN apk update && apk add aircrack-ng && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install aircrack-ng && apt-get install crunch && rm -rf /var/lib/apt/lists/*
 
 # Add a kraken user to run our application so that it doesn't need to run as root
 RUN adduser -D -s /bin/sh kraken
 WORKDIR /home/kraken
 
-# Defining the jar that will come to this file as an argument
-ARG JAR_FILE
+# Copy the jar file from build into the container
+COPY ./build/libs/Kraken-0.0.1.jar Kraken.jar
 
-# Copy the jar file into the container
-COPY ${JAR_FILE} kraken.jar
+# Copy the run script
+COPY ./run.sh run.sh
 
-ARG COMMANDLINEARGUMENTS
-
-ENTRYPOINT ["java", "-jar", "kraken.jar"]
+ENTRYPOINT ["./run.sh"]
 
 EXPOSE 5000
