@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.net.URISyntaxException;
+
 @RestController
 @RequestMapping("/api")
 @Secured(AuthoritiesConstants.CONSUMER)
@@ -26,21 +30,22 @@ public class WorkerController {
     }
 
     @PostMapping(value = "/worker/augment-token")
-    public ResponseEntity<WorkerIO.Augment.Response> augmentToken(@RequestBody WorkerIO.Augment.Request requestDTO){
+    public ResponseEntity<WorkerIO.Augment.Response> augmentToken(@RequestBody WorkerIO.Augment.Request requestDTO) {
         log.debug("Rest Request to Augment Token For Worker Login");
         return ResponseEntity.ok(workerService.augmentToken(requestDTO));
     }
 
     @PostMapping(value = "/worker")
-    public ResponseEntity<Worker> create(@RequestBody WorkerIO.Create.Request requestDTO) {
+    public ResponseEntity<Worker> create(@RequestBody WorkerIO.Create.Request requestDTO) throws URISyntaxException {
         log.debug("REST Request for Worker Create");
-        return ResponseEntity.created(null).body(workerService.create(requestDTO));
+        Worker worker = workerService.create(requestDTO);
+        return ResponseEntity.created(new URI("/api/worker")).body(worker);
     }
 
     @PostMapping(value = "/worker/heartbeat")
-    public ResponseEntity<Void> register(@RequestBody WorkerIO.Heartbeat.Request requestDTO) {
+    public ResponseEntity<Void> heartbeat(HttpServletRequest httpServletRequest) {
         log.debug("REST Request for Worker Heartbeat");
-        workerService.heartbeat(requestDTO);
+        workerService.heartbeat(httpServletRequest);
         return ResponseEntity.ok().build();
     }
 

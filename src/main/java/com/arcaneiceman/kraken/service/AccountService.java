@@ -26,7 +26,7 @@ public class AccountService {
 
     public AccountService(AuthenticationManager authenticationManager,
                           TokenProvider tokenProvider,
-                          TokenBlacklist tokenBlacklist, WorkerService workerService) {
+                          TokenBlacklist tokenBlacklist) {
         this.authenticationManager = authenticationManager;
         this.tokenProvider = tokenProvider;
         this.tokenBlacklist = tokenBlacklist;
@@ -44,7 +44,7 @@ public class AccountService {
             throw new SystemException(23, "Authentication Failure", Status.BAD_REQUEST);
         }
     }
-    
+
     public AccountIO.Refresh.Response refresh(HttpServletRequest httpServletRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         // Get Worker Type and Name (Best Effort)

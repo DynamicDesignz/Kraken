@@ -7,6 +7,7 @@ import com.arcaneiceman.kraken.domain.PasswordList;
 import com.arcaneiceman.kraken.domain.Request;
 import com.arcaneiceman.kraken.domain.User;
 import com.arcaneiceman.kraken.domain.Worker;
+import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.embedded.JobDelimiter;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
@@ -14,12 +15,15 @@ import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
 import com.arcaneiceman.kraken.repository.PasswordListRepository;
 import com.arcaneiceman.kraken.repository.RequestRepository;
 import com.arcaneiceman.kraken.repository.UserRepository;
+import com.arcaneiceman.kraken.repository.WorkerRepository;
 import com.arcaneiceman.kraken.security.AuthoritiesConstants;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +35,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import java.util.ArrayList;
 
 import static com.arcaneiceman.kraken.domain.enumerations.WorkerType.CPU;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -39,28 +44,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class KrakenApplicationTests {
 
+    @Autowired
     private MockMvc mockMvc;
+    @Autowired
     private UserRepository userRepository;
+    @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
     private RequestRepository requestRepository;
+    @Autowired
     private PasswordListRepository passwordListRepository;
-    private ObjectMapper mapper;
+    @Autowired
+    private WorkerRepository workerRepository;
 
-    public KrakenApplicationTests(MockMvc mockMvc,
-                                  UserRepository userRepository,
-                                  PasswordEncoder passwordEncoder,
-                                  RequestRepository requestRepository,
-                                  PasswordListRepository passwordListRepository) {
-        this.mockMvc = mockMvc;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.requestRepository = requestRepository;
-        this.passwordListRepository = passwordListRepository;
-        mapper = new ObjectMapper();
-    }
+    private ObjectMapper mapper = new ObjectMapper();
 
     @Before
-    public void prepare() throws Exception {
+    public void prepare() {
         // Add User
         userRepository.save(new User(null, "test@test.com", "test-first-name", "test-last-name",
                 passwordEncoder.encode("helloworld"),
@@ -97,7 +97,12 @@ public class KrakenApplicationTests {
     }
 
     @Test
-    void workerCallsWithoutWorkerToken() {
+    public void workerCallsWithoutWorkerToken() {
+
+    }
+
+    @Test
+    public void workerGetJobWhenOffline() {
 
     }
 
@@ -125,11 +130,20 @@ public class KrakenApplicationTests {
     public void ExecuteMatchRequest() throws Exception {
         // Login Successfully
         AccountIO.Authenticate.Request a =
-                new AccountIO.Authenticate.Request("wali@twotalltotems.com", "admin");
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
         String authToken = login(a, status().isOk());
 
         // Create Request Successfully
-        Request request = createMatchRequest("helloworld", authToken, status().is2xxSuccessful());
+        RequestIO.Create.Request bb = new RequestIO.Create.Request(
+                RequestType.MATCH,
+                new MatchRequestDetail("hellohello"),
+                new ArrayList<String>() {{
+                    add("test.txt");
+                }},
+                new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
+                    add(new RequestIO.Create.Request.CrunchParams(4, 4, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
+                }});
+        Request request = createMatchRequest(bb, authToken, status().is2xxSuccessful());
 
         // Create Worker Successfully
         WorkerIO.Create.Request b = new WorkerIO.Create.Request(CPU, "Atlantis-Remote");
@@ -138,6 +152,9 @@ public class KrakenApplicationTests {
         // Worker Login Successfully
         WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
         String workerAuthToken = workerLogin(c, authToken, status().isOk());
+
+        // Worker Heartbeat Successfully
+        workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
 
         for (int i = 0; i < 11; i++) {
             // Get Job Successfully
@@ -154,12 +171,53 @@ public class KrakenApplicationTests {
         }
 
         // Request Should be complete (not exist)
-        Assert.assertNull(requestRepository.getOne(request.getId()));
+        Assert.assertFalse(requestRepository.existsById(request.getId()));
     }
 
     @Test
     public void ExecuteMatchRequestFound() throws Exception {
+        // Login Successfully
+        AccountIO.Authenticate.Request a =
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
+        String authToken = login(a, status().isOk());
 
+        // Create Request Successfully
+        RequestIO.Create.Request bb = new RequestIO.Create.Request(
+                RequestType.MATCH,
+                new MatchRequestDetail("beautiful"),
+                new ArrayList<String>() {{
+                    add("test.txt");
+                }},
+                new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
+                    add(new RequestIO.Create.Request.CrunchParams(4, 4, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
+                }});
+        Request request = createMatchRequest(bb, authToken, status().is2xxSuccessful());
+
+        // Create Worker Successfully
+        WorkerIO.Create.Request b = new WorkerIO.Create.Request(CPU, "Atlantis-Remote");
+        createWorker(b, authToken, status().is2xxSuccessful());
+
+        // Worker Login Successfully
+        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
+        String workerAuthToken = workerLogin(c, authToken, status().isOk());
+
+        // Worker Heartbeat Successfully
+        workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
+
+        // Get Job Successfully
+        RequestIO.GetJob.Response jobResponse = getJob(workerAuthToken, status().is2xxSuccessful());
+
+        // Report Job Complete Successfully
+        RequestIO.ReportJob.Request d = new RequestIO.ReportJob.Request(
+                jobResponse.getRequestId(),
+                jobResponse.getListId(),
+                jobResponse.getJobId(),
+                TrackingStatus.COMPLETE,
+                "beautiful");
+        reportJob(d, workerAuthToken, status().is2xxSuccessful());
+
+        // Request Should be complete (not exist)
+        Assert.assertFalse(requestRepository.existsById(request.getId()));
     }
 
     @Test
@@ -188,13 +246,68 @@ public class KrakenApplicationTests {
     }
 
     @Test
-    public void RemovePasswordListWhileRunningJob() {
+    public void RemovePasswordListWhileRunningJob() throws Exception {
+        // Login Successfully
+        AccountIO.Authenticate.Request a =
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
+        String authToken = login(a, status().isOk());
 
+        // Create Request Successfully
+        RequestIO.Create.Request bb = new RequestIO.Create.Request(
+                RequestType.MATCH,
+                new MatchRequestDetail("beautiful"),
+                new ArrayList<String>() {{
+                    add("test.txt");
+                }},
+                new ArrayList<>());
+        Request request = createMatchRequest(bb, authToken, status().is2xxSuccessful());
+
+        // Create Worker Successfully
+        WorkerIO.Create.Request b = new WorkerIO.Create.Request(CPU, "Atlantis-Remote");
+        createWorker(b, authToken, status().is2xxSuccessful());
+
+        // Worker Login Successfully
+        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
+        String workerAuthToken = workerLogin(c, authToken, status().isOk());
+
+        // Worker Heartbeat Successfully
+        workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
+
+        // Get Job Successfully
+        RequestIO.GetJob.Response jobResponse = getJob(workerAuthToken, status().is2xxSuccessful());
+
+        // Report Job Complete Successfully
+        RequestIO.ReportJob.Request d = new RequestIO.ReportJob.Request(
+                jobResponse.getRequestId(),
+                jobResponse.getListId(),
+                jobResponse.getJobId(),
+                TrackingStatus.COMPLETE,
+                "beautiful");
+        reportJob(d, workerAuthToken, status().is2xxSuccessful());
+
+        // Delete PasswordList
+        passwordListRepository.deleteAll();
+
+        // Get Job Successfully
+        getJob(workerAuthToken, status().is4xxClientError());
     }
 
     @Test
-    public void tooManyCrunchJobs() {
+    public void tooManyCrunchJobs() throws Exception {
+        // Login Successfully
+        AccountIO.Authenticate.Request a =
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
+        String authToken = login(a, status().isOk());
 
+        // Create Request Unsuccessfully
+        RequestIO.Create.Request bb = new RequestIO.Create.Request(
+                RequestType.MATCH,
+                new MatchRequestDetail("beautiful"),
+                new ArrayList<>(),
+                new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
+                    add(new RequestIO.Create.Request.CrunchParams(4, 16, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
+                }});
+        createMatchRequest(bb, authToken, status().is4xxClientError());
     }
 
     @Test
@@ -203,68 +316,91 @@ public class KrakenApplicationTests {
     }
 
     private String login(AccountIO.Authenticate.Request authRequest, ResultMatcher resultMatcher) throws Exception {
-        MvcResult tokenResult = mockMvc.perform(post("/api/authenticate")
+        MvcResult tokenResult = mockMvc.perform(post("/api/account/authenticate")
                 .with(request -> {
-                    request.addHeader("ContentType", "application/json");
+                    request.addHeader("Content-Type", "application/json");
                     return request;
                 }).content(mapper.writeValueAsString(authRequest)))
                 .andExpect(resultMatcher)
                 .andReturn();
-        return mapper.readValue(tokenResult.getResponse().toString(), AccountIO.Authenticate.Response.class).getToken();
+        return mapper.readValue(tokenResult.getResponse().getContentAsString(), AccountIO.Authenticate.Response.class).getToken();
     }
 
     private Worker createWorker(WorkerIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/worker")
                 .with(request -> {
-                    request.addHeader("Authentication", "Bearer " + authToken);
-                    request.addHeader("ContentType", "application/json");
+                    request.addHeader("Authorization", "Bearer " + authToken);
+                    request.addHeader("Content-Type", "application/json");
                     return request;
                 }).content(mapper.writeValueAsString(req)))
                 .andExpect(resultMatcher)
                 .andReturn();
-        return mapper.readValue(result.getResponse().toString(), Worker.class);
+        return mapper.readValue(result.getResponse().getContentAsString(), Worker.class);
     }
 
     private String workerLogin(WorkerIO.Augment.Request workerRequest, String authToken, ResultMatcher resultMatcher) throws Exception {
-        MvcResult tokenResult = mockMvc.perform(post("/worker/augment-token")
+        MvcResult tokenResult = mockMvc.perform(post("/api/worker/augment-token")
                 .with(request -> {
-                    request.addHeader("ContentType", "application/json");
-                    request.addHeader("Authentication", "Bearer " + authToken);
+                    request.addHeader("Content-Type", "application/json");
+                    request.addHeader("Authorization", "Bearer " + authToken);
                     return request;
                 }).content(mapper.writeValueAsString(workerRequest)))
                 .andExpect(resultMatcher)
                 .andReturn();
-        return mapper.readValue(tokenResult.getResponse().toString(), WorkerIO.Augment.Response.class).getToken();
+        return mapper.readValue(tokenResult.getResponse().getContentAsString(), WorkerIO.Augment.Response.class).getToken();
     }
 
-    private Request createMatchRequest(String valueToMatch, String authToken, ResultMatcher resultMatcher) throws Exception {
-        RequestIO.Create.Request req = new RequestIO.Create.Request(
-                RequestType.MATCH,
-                new MatchRequestDetail(valueToMatch),
-                new ArrayList<String>() {{
-                    add("text.txt");
-                }},
-                new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
-                    add(new RequestIO.Create.Request.CrunchParams(4, 4, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
-                }});
+    private void workerHeartbeat(String workerAuthToken, ResultMatcher resultMatcher) throws Exception {
+        mockMvc.perform(post("/api/worker/heartbeat")
+                .with(request -> {
+                    request.addHeader("Content-Type", "application/json");
+                    request.addHeader("Authorization", "Bearer " + workerAuthToken);
+                    return request;
+                }))
+                .andExpect(resultMatcher);
+    }
+
+    private Request createMatchRequest(RequestIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/requests")
                 .with(request -> {
-                    request.addHeader("Authentication", "Bearer " + authToken);
+                    request.addHeader("Authorization", "Bearer " + authToken);
                     return request;
-                }).param("detail", mapper.writeValueAsString(req)))
+                }).param("details", mapper.writeValueAsString(req)))
                 .andExpect(resultMatcher)
                 .andReturn();
-        return mapper.readValue(result.getResponse().toString(), Request.class);
+        if (!resultMatcher.equals(status().is2xxSuccessful()))
+            return null;
+        mapper.addMixIn(Request.class, IgnoreRequestDetailsMixIn.class);
+        return mapper.readValue(result.getResponse().getContentAsString(), Request.class);
+    }
+
+    private Request getRequest(Long id, String authToken, ResultMatcher resultMatcher) throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/requests/" + id.toString())
+                .with(request -> {
+                    request.addHeader("Authorization", "Bearer " + authToken);
+                    return request;
+                }))
+                .andExpect(resultMatcher)
+                .andReturn();
+        mapper.addMixIn(Request.class, IgnoreRequestDetailsMixIn.class);
+        return mapper.readValue(result.getResponse().getContentAsString(), Request.class);
+    }
+
+    abstract class IgnoreRequestDetailsMixIn {
+        @JsonIgnore
+        public RequestDetail requestDetail;
     }
 
     private RequestIO.GetJob.Response getJob(String workerAuthToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/requests/get-job")
                 .with(request -> {
-                    request.addHeader("Authentication", "Bearer " + workerAuthToken);
+                    request.addHeader("Authorization", "Bearer " + workerAuthToken);
                     return request;
                 })).andExpect(resultMatcher)
                 .andReturn();
-        return mapper.readValue(result.getResponse().toString(), RequestIO.GetJob.Response.class);
+        if (!resultMatcher.equals(status().is2xxSuccessful()))
+            return null;
+        return mapper.readValue(result.getResponse().getContentAsString(), RequestIO.GetJob.Response.class);
     }
 
     private void reportJob(RequestIO.ReportJob.Request req,
@@ -272,7 +408,8 @@ public class KrakenApplicationTests {
                            ResultMatcher resultMatcher) throws Exception {
         mockMvc.perform(post("/api/requests/report-job")
                 .with(request -> {
-                    request.addHeader("Authentication", "Bearer " + workerAuthToken);
+                    request.addHeader("Authorization", "Bearer " + workerAuthToken);
+                    request.addHeader("Content-Type", "application/json");
                     return request;
                 }).content(mapper.writeValueAsString(req)))
                 .andExpect(resultMatcher);

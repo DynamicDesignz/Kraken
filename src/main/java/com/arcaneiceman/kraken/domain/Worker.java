@@ -30,7 +30,13 @@ public class Worker {
     @Column
     private Date lastCheckIn;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Job job;
+
+    @PreRemove
+    private void preRemove() {
+        if (job != null)
+            job.setWorker(null);
+    }
 
 }

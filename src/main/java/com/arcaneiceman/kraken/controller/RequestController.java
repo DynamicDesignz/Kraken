@@ -15,6 +15,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Created by Wali on 4/1/2018.
@@ -34,11 +36,13 @@ public class RequestController {
     @PostMapping(value = "/requests")
     public ResponseEntity<Request> createWPA(
             @RequestParam(value = "details") String unmarshalledRequestDTO,
-            @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile) throws IOException {
+            @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile)
+            throws IOException, URISyntaxException {
         log.debug("REST Request to create WPA Request");
-        return ResponseEntity.created(null).body(requestService.create(
+        Request request = requestService.create(
                 new ObjectMapper().readValue(unmarshalledRequestDTO, RequestIO.Create.Request.class),
-                passwordCaptureFile));
+                passwordCaptureFile);
+        return ResponseEntity.created(new URI("/api/requests" + request.getId().toString())).body(request);
     }
 
     @GetMapping(value = "/requests/{id}")

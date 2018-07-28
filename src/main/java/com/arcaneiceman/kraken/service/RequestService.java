@@ -172,10 +172,10 @@ public class RequestService {
         Request request = requestPermissionLayer.get(id);
         switch (request.getRequestType()) {
             case WPA:
-                wpaRequestDetailService.delete(id);
+                wpaRequestDetailService.delete(request.getRequestDetail().getId());
                 break;
             case MATCH:
-                matchRequestDetailService.delete(id);
+                matchRequestDetailService.delete(request.getRequestDetail().getId());
                 break;
         }
         requestRepository.delete(request);

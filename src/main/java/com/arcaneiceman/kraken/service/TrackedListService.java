@@ -40,11 +40,17 @@ public class TrackedListService {
     private AmazonS3Configuration amazonS3Configuration;
     private JobService jobService;
 
-    @Value("${application.password-list-settings.folder-prefix}")
-    private String candidateValueListStoragePath;
-
-    @Value("${application.general.job-size}")
+    // General Tracked List Values
+    @Value("${application.tracked-list-settings.job-size}")
     private String jobSize;
+
+    // Password List Values
+    @Value("${application.tracked-list-settings.password-list.cloud-storage-path}")
+    private String passwordListCloudStoragePath;
+
+    // Crunch List Values
+    @Value("${application.tracked-list-settings.crunch-list.max-total-jobs}")
+    private String crunchListMaxTotalJobs;
 
     public TrackedListService(TrackedListRepository trackedListRepository,
                               TrackedListPermissionLayer trackedListPermissionLayer,
@@ -60,11 +66,15 @@ public class TrackedListService {
 
     @PostConstruct
     public void checkValues() {
-        if (candidateValueListStoragePath == null || candidateValueListStoragePath.isEmpty())
-            throw new RuntimeException("Application Tracked Password List Service - " +
-                    "Password List S3 Path : Storage Path Not Specified ");
+        if (passwordListCloudStoragePath == null || passwordListCloudStoragePath.isEmpty())
+            throw new RuntimeException("Application Tracked List Service - " +
+                    "Password List Cloud Storage Path Not Specified ");
+        if (crunchListMaxTotalJobs == null || crunchListMaxTotalJobs.isEmpty())
+            throw new RuntimeException("Application Tracked List Service - " +
+                    "Crunch List Max Total Jobs Not Specified");
         if (jobSize == null || jobSize.isEmpty())
-            throw new RuntimeException("Application Candidate Value List Updater : Job Size Not Specified");
+            throw new RuntimeException("Application Tracked List Service - " +
+                    "Job Size Not Specified");
     }
 
     public TrackedCrunchList createCrunchList(Integer minSize,
@@ -90,6 +100,8 @@ public class TrackedListService {
                     + minSize + " " + maxSize + " " + characters, Status.BAD_REQUEST);
         // Ceil of [Number of lines / jobSize]
         Integer totalJobs = ((Double) Math.ceil(Double.parseDouble(matcher.group(1)) / Double.parseDouble(jobSize))).intValue();
+        if (totalJobs > Integer.parseInt(crunchListMaxTotalJobs))
+            throw new SystemException(3242, "Number of jobs created by this would exceed " + crunchListMaxTotalJobs, Status.BAD_REQUEST);
         TrackedCrunchList trackedCrunchList = new TrackedCrunchList();
         trackedCrunchList.setStatus(TrackingStatus.PENDING);
         trackedCrunchList.setMinSize(minSize);
@@ -218,7 +230,7 @@ public class TrackedListService {
                 if (passwordList == null)
                     throw new Exception("Password List Missing");
                 GetObjectRequest getObjectRequest = new GetObjectRequest(amazonS3Configuration.getAmazonS3BucketName(),
-                        candidateValueListStoragePath + "/" + passwordList.getName());
+                        passwordListCloudStoragePath + "/" + passwordList.getName());
                 getObjectRequest.setRange(Long.parseLong(start), Long.parseLong(end));
                 S3Object object = amazonS3Configuration.generateClient().getObject(getObjectRequest);
                 InputStream fileStream = new BufferedInputStream(object.getObjectContent());

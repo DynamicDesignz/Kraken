@@ -15,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Authenticate a user from the database.
@@ -40,11 +38,10 @@ public class DomainUserDetailsService implements UserDetailsService {
         User userByEmailFromDatabase = userRepository.findUserByEmail(lowercaseLogin);
         if (userByEmailFromDatabase == null)
             throw new UsernameNotFoundException("");
-        return createSpringSecurityUser(lowercaseLogin, userByEmailFromDatabase);
+        return createSpringSecurityUser(userByEmailFromDatabase);
     }
 
-    private org.springframework.security.core.userdetails.User createSpringSecurityUser(String lowercaseLogin,
-                                                                                        User user) {
+    private org.springframework.security.core.userdetails.User createSpringSecurityUser(User user) {
         List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
         grantedAuthorities.add(new SimpleGrantedAuthority(user.getAuthority()));
         return new org.springframework.security.core.userdetails.User(user.getLogin(),

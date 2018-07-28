@@ -7,7 +7,6 @@ import lombok.*;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
-import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
@@ -23,7 +22,7 @@ import java.util.List;
 @Table(name = "jobs")
 @Entity
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-public class Job extends MtoOPermissionEntity<TrackedList>{
+public class Job extends MtoOPermissionEntity<TrackedList> {
 
     private static final long serialVersionUID = 1L;
 
@@ -51,10 +50,17 @@ public class Job extends MtoOPermissionEntity<TrackedList>{
     @Column
     private Date timeoutAt;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.DETACH)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Worker worker;
+
+    @PreRemove
+    private void preRemove() {
+        if (worker != null)
+            worker.setJob(null);
+    }
 
     @Transient
     private List<String> values;
+
 
 }

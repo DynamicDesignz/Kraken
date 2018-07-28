@@ -64,7 +64,7 @@ public class WorkerService {
                         " and type " + workerType + " not found", Status.NOT_FOUND));
     }
 
-    public Worker get(HttpServletRequest httpServletRequest){
+    public Worker get(HttpServletRequest httpServletRequest) {
         User user = userService.getUserOrThrow();
         String workerName = (String) httpServletRequest.getAttribute(WORKER_NAME);
         WorkerType workerType = WorkerType.valueOf((String) httpServletRequest.getAttribute(WORKER_TYPE));
@@ -77,12 +77,14 @@ public class WorkerService {
 //        workerRepository.fin
 //    }
 
-    public void heartbeat(WorkerIO.Heartbeat.Request requestDTO) {
+    public void heartbeat(HttpServletRequest httpServletRequest) {
         User user = userService.getUserOrThrow();
+        String workerName = (String) httpServletRequest.getAttribute(WORKER_NAME);
+        WorkerType workerType = WorkerType.valueOf((String) httpServletRequest.getAttribute(WORKER_TYPE));
         Worker worker = workerRepository.findById(
-                new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId()))
-                .orElseThrow(() -> new SystemException(452, "Worker with name " + requestDTO.getWorkerName() +
-                        " and type " + requestDTO.getWorkerName() + " not found", Status.NOT_FOUND));
+                new WorkerPK(workerName, workerType, user.getId()))
+                .orElseThrow(() -> new SystemException(452, "Worker with name " + workerName +
+                        " and type " + workerType + " not found", Status.NOT_FOUND));
         worker.setStatus(WorkerStatus.ONLINE);
         worker.setLastCheckIn(new Date());
         workerRepository.save(worker);

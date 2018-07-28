@@ -4,16 +4,19 @@ import com.arcaneiceman.kraken.domain.abs.MtoOPermissionEntity;
 import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
+import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
+import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
-import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.List;
-import java.util.Set;
 
 @EqualsAndHashCode(callSuper = false, of = "id")
 @Setter
