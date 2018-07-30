@@ -1,6 +1,7 @@
 package com.arcaneiceman.kraken.controller;
 
 import com.arcaneiceman.kraken.controller.io.AccountIO;
+import com.arcaneiceman.kraken.domain.User;
 import com.arcaneiceman.kraken.security.AuthoritiesConstants;
 import com.arcaneiceman.kraken.service.AccountService;
 import com.arcaneiceman.kraken.service.UserService;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 @RestController
 @RequestMapping("/api/account")
@@ -31,11 +34,11 @@ public class AccountController {
     }
 
     @Validated
-    @Secured(AuthoritiesConstants.CONSUMER)
     @PostMapping(value = "/register")
-    public ResponseEntity<AccountIO.Register.Response> register(@Valid @RequestBody AccountIO.Register.Request requestDTO) {
+    public ResponseEntity<AccountIO.Register.Response> register(@Valid @RequestBody AccountIO.Register.Request requestDTO) throws URISyntaxException {
         log.debug("REST request to register user account");
-        return ResponseEntity.created(null).body(userService.createNewUser(requestDTO, false));
+        AccountIO.Register.Response response = userService.createNewUser(requestDTO, false);
+        return ResponseEntity.created(new URI("")).body(response);
     }
 
     @Validated

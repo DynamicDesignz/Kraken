@@ -78,17 +78,28 @@ public class KrakenApplicationTests {
 
     @After
     public void clean() {
-        userRepository.deleteAll();
         requestRepository.deleteAll();
         passwordListRepository.deleteAll();
         workerRepository.deleteAll();
+        userRepository.deleteAll();
+    }
+
+    @Test
+    public void DuplicateUserFail() throws Exception {
+        // Register User
+        AccountIO.Register.Request a1 = new AccountIO.Register.Request(
+                "test@test.com",
+                "helloworld",
+                "firstname",
+                "lastname");
+        registerUser(a1, status().is4xxClientError());
     }
 
     @Test
     public void RegisterNewUser() throws Exception {
         // Register User
         AccountIO.Register.Request a1 = new AccountIO.Register.Request(
-                "test@test.com",
+                "test2@test.com",
                 "helloworld",
                 "firstname",
                 "lastname");
@@ -264,7 +275,7 @@ public class KrakenApplicationTests {
             RequestIO.GetJob.Response jobResponse = getJob(workerAuthToken, status().is2xxSuccessful());
 
             // Report Job Complete Successfully
-            assert jobResponse != null;
+            Assert.assertNotNull(jobResponse);
             RequestIO.ReportJob.Request d = new RequestIO.ReportJob.Request(
                     jobResponse.getRequestId(),
                     jobResponse.getListId(),
@@ -275,7 +286,7 @@ public class KrakenApplicationTests {
         }
 
         // Request Should be complete (not exist)
-        assert request != null;
+        Assert.assertNotNull(request);
         Assert.assertFalse(requestRepository.existsById(request.getId()));
     }
 
@@ -552,7 +563,11 @@ public class KrakenApplicationTests {
                 }).content(mapper.writeValueAsString(req)))
                 .andExpect(resultMatcher)
                 .andReturn();
-        return mapper.readValue(result.getResponse().getContentAsString(), AccountIO.Register.Response.class);
+        try {
+            return mapper.readValue(result.getResponse().getContentAsString(), AccountIO.Register.Response.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String login(AccountIO.Authenticate.Request authRequest, ResultMatcher resultMatcher) throws Exception {
@@ -575,7 +590,11 @@ public class KrakenApplicationTests {
                 }).content(mapper.writeValueAsString(req)))
                 .andExpect(resultMatcher)
                 .andReturn();
-        return mapper.readValue(result.getResponse().getContentAsString(), Worker.class);
+        try {
+            return mapper.readValue(result.getResponse().getContentAsString(), Worker.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String workerLogin(WorkerIO.Augment.Request workerRequest, String authToken, ResultMatcher resultMatcher) throws Exception {
@@ -587,7 +606,11 @@ public class KrakenApplicationTests {
                 }).content(mapper.writeValueAsString(workerRequest)))
                 .andExpect(resultMatcher)
                 .andReturn();
-        return mapper.readValue(tokenResult.getResponse().getContentAsString(), WorkerIO.Augment.Response.class).getToken();
+        try {
+            return mapper.readValue(tokenResult.getResponse().getContentAsString(), WorkerIO.Augment.Response.class).getToken();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void workerHeartbeat(String workerAuthToken, ResultMatcher resultMatcher) throws Exception {
@@ -608,10 +631,12 @@ public class KrakenApplicationTests {
                 }).param("details", mapper.writeValueAsString(req)))
                 .andExpect(resultMatcher)
                 .andReturn();
-        if (!resultMatcher.equals(status().is2xxSuccessful()))
-            return null;
         mapper.addMixIn(Request.class, IgnoreRequestDetailsMixIn.class);
-        return mapper.readValue(result.getResponse().getContentAsString(), Request.class);
+        try {
+            return mapper.readValue(result.getResponse().getContentAsString(), Request.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private Request getRequest(Long id, String authToken, ResultMatcher resultMatcher) throws Exception {
@@ -638,9 +663,11 @@ public class KrakenApplicationTests {
                     return request;
                 })).andExpect(resultMatcher)
                 .andReturn();
-        if (!resultMatcher.equals(status().is2xxSuccessful()))
+        try {
+            return mapper.readValue(result.getResponse().getContentAsString(), RequestIO.GetJob.Response.class);
+        } catch (Exception e) {
             return null;
-        return mapper.readValue(result.getResponse().getContentAsString(), RequestIO.GetJob.Response.class);
+        }
     }
 
     private void reportJob(RequestIO.ReportJob.Request req,

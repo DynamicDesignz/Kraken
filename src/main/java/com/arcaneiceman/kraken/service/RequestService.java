@@ -10,7 +10,6 @@ import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerStatus;
-import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
 import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.repository.RequestRepository;
@@ -25,8 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
-import static com.arcaneiceman.kraken.config.Constants.WORKER_NAME;
-import static com.arcaneiceman.kraken.config.Constants.WORKER_TYPE;
 import static org.zalando.problem.Status.BAD_REQUEST;
 
 @Service
@@ -135,8 +132,7 @@ public class RequestService {
                             || trackedList.getStatus() == TrackingStatus.ERROR)) {
                 // TODO : Mark Request As Complete
                 retireActiveRequest(request.getId());
-                throw new SystemException(2423, "Request with id" + request.getId() + " is complete", BAD_REQUEST
-                );
+                throw new SystemException(2423, "Request with id" + request.getId() + " is complete", BAD_REQUEST);
             }
         }
         // No more job exception

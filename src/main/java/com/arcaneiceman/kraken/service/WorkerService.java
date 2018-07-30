@@ -51,6 +51,8 @@ public class WorkerService {
 
     public Worker create(WorkerIO.Create.Request requestDTO) {
         User user = userService.getUserOrThrow();
+        if (workerRepository.existsById(new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId())))
+            throw new SystemException(3242, "Worker already exists", Status.BAD_REQUEST);
         Worker worker = new Worker();
         worker.setId(new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId()));
         worker.setStatus(WorkerStatus.OFFLINE);
@@ -67,7 +69,10 @@ public class WorkerService {
     public Worker get(HttpServletRequest httpServletRequest) {
         User user = userService.getUserOrThrow();
         String workerName = (String) httpServletRequest.getAttribute(WORKER_NAME);
-        WorkerType workerType = WorkerType.valueOf((String) httpServletRequest.getAttribute(WORKER_TYPE));
+        WorkerType workerType = httpServletRequest.getAttribute(WORKER_TYPE) != null ?
+                WorkerType.valueOf((String) httpServletRequest.getAttribute(WORKER_TYPE)) : null;
+        if (workerName == null || workerType == null)
+            throw new SystemException(23, "Worker Details Not Found", Status.BAD_REQUEST);
         return workerRepository.findById(new WorkerPK(workerName, workerType, user.getId()))
                 .orElseThrow(() -> new SystemException(452, "Worker with name " + workerName +
                         " and type " + workerType + " not found", Status.NOT_FOUND));
