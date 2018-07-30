@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  kraken:
+    restart: always
+    image: kraken
+    build:
+        context: .
+        dockerfile: Dockerfile
+    container_name: kraken-container
+    ports:
+      - "5000:5000"
+      - "5005:5005"
+    command: java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -jar Kraken.jar

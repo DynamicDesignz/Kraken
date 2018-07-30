@@ -38,6 +38,7 @@ public class AccountIO {
 
         @Getter
         @NoArgsConstructor
+        @AllArgsConstructor
         public static class Request {
 
             @NotBlank
