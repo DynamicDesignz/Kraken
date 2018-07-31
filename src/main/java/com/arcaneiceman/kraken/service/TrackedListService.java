@@ -13,6 +13,7 @@ import com.arcaneiceman.kraken.util.ConsoleCommandUtil;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
 import com.ttt.eru.libs.fileupload.configuration.AmazonS3Configuration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.zalando.problem.Status;
@@ -22,10 +23,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,15 +38,11 @@ public class TrackedListService {
     private AmazonS3Configuration amazonS3Configuration;
     private JobService jobService;
 
-    // General Tracked List Values
+    // Environment Variables
     @Value("${application.tracked-list-settings.job-size}")
     private String jobSize;
-
-    // Password List Values
     @Value("${application.tracked-list-settings.password-list.cloud-storage-path}")
     private String passwordListCloudStoragePath;
-
-    // Crunch List Values
     @Value("${application.tracked-list-settings.crunch-list.max-total-jobs}")
     private String crunchListMaxTotalJobs;
 
@@ -144,6 +138,7 @@ public class TrackedListService {
                 try {
                     job.setValues(getCandidateValues(trackedList, job.getStart(), job.getEnd()));
                     job.setTrackingStatus(TrackingStatus.RUNNING);
+                    job.setSubmittedAt(new Date());
                     trackedListRepository.save(trackedList);
                     return job;
                 }
@@ -257,7 +252,7 @@ public class TrackedListService {
         return candidateValues;
     }
 
-    void reportJob(Long trackedListId, String jobId, TrackingStatus trackingStatus, Worker worker, Request request) {
+    void reportJob(String jobId, Long trackedListId, Request request, TrackingStatus trackingStatus, Worker worker) {
         TrackedList trackedList = trackedListPermissionLayer.getWithOwner(trackedListId, request);
         Job job = jobService.get(jobId, trackedList);
 
@@ -304,4 +299,14 @@ public class TrackedListService {
         int reportedJobCount = TrackedList.getCompletedJobCount() + TrackedList.getErrorJobCount();
         return Objects.equals(reportedJobCount, TrackedList.getTotalJobCount());
     }
+
+    // TODO : Make this a Quartz Job
+    @Scheduled(initialDelay = 5000L, fixedDelayString = "${application.tracked-list-settings.job-expiry-task-delay-in-milliseconds}")
+    public void retireJob() {
+        List<Job> expiredJobs = jobService.getExpiredJobs();
+        for (Job job : expiredJobs) {
+            reportJob(job.getId(), job.getOwner().getId(), job.getOwner().getOwner(), TrackingStatus.ERROR, job.getWorker());
+        }
+    }
+
 }

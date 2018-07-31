@@ -49,7 +49,7 @@ public class WorkerIO {
         }
     }
 
-    public static class Logout {
+    public static class Delete {
 
         @Getter
         @NoArgsConstructor

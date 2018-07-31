@@ -3,6 +3,7 @@ package com.arcaneiceman.kraken.domain.embedded;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.Embeddable;
@@ -11,6 +12,7 @@ import javax.persistence.Enumerated;
 import java.io.Serializable;
 
 @Data
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
 @Embeddable

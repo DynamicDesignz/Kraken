@@ -9,14 +9,20 @@ import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import com.arcaneiceman.kraken.repository.WorkerRepository;
 import com.arcaneiceman.kraken.security.jwt.TokenProvider;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.zalando.problem.Status;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import java.util.Date;
+import java.util.List;
 
 import static com.arcaneiceman.kraken.config.Constants.WORKER_NAME;
 import static com.arcaneiceman.kraken.config.Constants.WORKER_TYPE;
@@ -29,10 +35,20 @@ public class WorkerService {
     private final TokenProvider tokenProvider;
     private UserService userService;
 
+    @Value("${application.worker-settings.worker-expiry-in-milliseconds}")
+    private String workerExpiryTime;
+
     public WorkerService(WorkerRepository workerRepository, TokenProvider tokenProvider, UserService userService) {
         this.workerRepository = workerRepository;
         this.tokenProvider = tokenProvider;
         this.userService = userService;
+    }
+
+    @PostConstruct
+    public void checkVariables() {
+        if (workerExpiryTime == null || workerExpiryTime.isEmpty())
+            throw new RuntimeException("Application Worker Service - " +
+                    "Worker Expiry Time Not Specified");
     }
 
     public WorkerIO.Augment.Response augmentToken(WorkerIO.Augment.Request requestDTO) {
@@ -78,9 +94,10 @@ public class WorkerService {
                         " and type " + workerType + " not found", Status.NOT_FOUND));
     }
 
-//    public Page<Worker> get(Pageable pageable){
-//        workerRepository.fin
-//    }
+    public Page<Worker> get(Pageable pageable) {
+        User user = userService.getUserOrThrow();
+        return workerRepository.findByOwner(user.getId(), pageable);
+    }
 
     public void heartbeat(HttpServletRequest httpServletRequest) {
         User user = userService.getUserOrThrow();
@@ -95,4 +112,29 @@ public class WorkerService {
         workerRepository.save(worker);
     }
 
+    public void delete(WorkerIO.Delete.Request requestDTO) {
+        User user = userService.getUserOrThrow();
+        WorkerPK pk = new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId());
+        if (!workerRepository.existsById(pk))
+            throw new SystemException(452, "Worker with name " + requestDTO.getWorkerName() +
+                    " and type " + requestDTO.getWorkerType() + " not found", Status.NOT_FOUND);
+        workerRepository.deleteById(pk);
+    }
+
+    // TODO : Make this a Quartz Job
+    @Scheduled(initialDelay = 5000L, fixedDelayString = "${application.worker-settings.worker-offline-task-delay-in-milliseconds}")
+    public void expireWorker() {
+        // lastCheckedIn < currentTime - expiryTime
+        List<Worker> offlineWorkers = workerRepository.getByLastCheckInBefore(
+                new Date(new Date().getTime() - Long.parseLong(workerExpiryTime)));
+        for (Worker worker : offlineWorkers) {
+            worker.setStatus(WorkerStatus.OFFLINE);
+            if (worker.getJob() != null) {
+                worker.getJob().setWorker(null);
+                worker.setJob(null);
+                workerRepository.save(worker);
+            }
+            // TODO: Send Email to user that worker is offline
+        }
+    }
 }

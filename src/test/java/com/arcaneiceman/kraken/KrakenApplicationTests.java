@@ -149,7 +149,7 @@ public class KrakenApplicationTests {
                 new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
                     add(new RequestIO.Create.Request.CrunchParams(4, 4, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
                 }});
-        Request request = createMatchRequest(bb, authToken, status().is2xxSuccessful());
+        createMatchRequest(bb, authToken, status().is2xxSuccessful());
 
         // Create Worker Successfully
         WorkerIO.Create.Request b = new WorkerIO.Create.Request(CPU, "Atlantis-Remote");
@@ -267,10 +267,10 @@ public class KrakenApplicationTests {
         WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
         String workerAuthToken = workerLogin(c, authToken, status().isOk());
 
-        // Worker Heartbeat Successfully
-        workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
-
         for (int i = 0; i < 11; i++) {
+            // Worker Heartbeat Successfully
+            workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
+
             // Get Job Successfully
             RequestIO.GetJob.Response jobResponse = getJob(workerAuthToken, status().is2xxSuccessful());
 
@@ -363,8 +363,6 @@ public class KrakenApplicationTests {
         // Worker 1 Login Successfully
         WorkerIO.Augment.Request c1 = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote-1");
         String workerAuthToken1 = workerLogin(c1, authToken, status().isOk());
-        // Worker 1 Heartbeat Successfully
-        workerHeartbeat(workerAuthToken1, status().is2xxSuccessful());
 
         // Create Worker 2 Successfully
         WorkerIO.Create.Request b2 = new WorkerIO.Create.Request(CPU, "Atlantis-Remote-2");
@@ -372,10 +370,14 @@ public class KrakenApplicationTests {
         // Worker 2 Login Successfully
         WorkerIO.Augment.Request c2 = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote-2");
         String workerAuthToken2 = workerLogin(c2, authToken, status().isOk());
-        // Worker 1 Heartbeat Successfully
-        workerHeartbeat(workerAuthToken2, status().is2xxSuccessful());
 
         for (int i = 0; i < 5; i++) {
+            // Worker 1 Heartbeat Successfully
+            workerHeartbeat(workerAuthToken1, status().is2xxSuccessful());
+
+            // Worker 2 Heartbeat Successfully
+            workerHeartbeat(workerAuthToken2, status().is2xxSuccessful());
+
             // Get Job 1 Successfully
             RequestIO.GetJob.Response jobResponse1 = getJob(workerAuthToken1, status().is2xxSuccessful());
 
@@ -452,10 +454,10 @@ public class KrakenApplicationTests {
         WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
         String workerAuthToken = workerLogin(c, authToken, status().isOk());
 
-        // Worker Heartbeat Successfully
-        workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
-
         for (int i = 0; i < 11; i++) {
+            // Worker Heartbeat Successfully
+            workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
+
             // Get Job Successfully
             RequestIO.GetJob.Response jobResponse = getJob(workerAuthToken, status().is2xxSuccessful());
 

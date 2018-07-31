@@ -48,7 +48,7 @@ public class Job extends MtoOPermissionEntity<TrackedList> {
     private Integer errorCount;
 
     @Column
-    private Date timeoutAt;
+    private Date submittedAt;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Worker worker;

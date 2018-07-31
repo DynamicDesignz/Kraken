@@ -152,8 +152,8 @@ public class RequestService {
             // TODO : Mark Request As Complete
             retireActiveRequest(request.getId());
         } else
-            trackedListService.reportJob(requestDTO.getListId(), requestDTO.getJobId(),
-                    requestDTO.getTrackingStatus(), worker, request);
+            trackedListService.reportJob(requestDTO.getJobId(), requestDTO.getListId(), request,
+                    requestDTO.getTrackingStatus(), worker);
 
         // Check if request is complete
         if (request.getTrackedLists().stream().allMatch(trackedList ->

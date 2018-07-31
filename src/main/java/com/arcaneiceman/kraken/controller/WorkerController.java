@@ -6,12 +6,11 @@ import com.arcaneiceman.kraken.security.AuthoritiesConstants;
 import com.arcaneiceman.kraken.service.WorkerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -49,5 +48,17 @@ public class WorkerController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping(value = "/worker")
+    public Page<Worker> getWorkers(Pageable pageable){
+        log.debug("REST Request to get Workers");
+        return workerService.get(pageable);
+    }
+
+    @DeleteMapping(value = "/worker")
+    public ResponseEntity<Void> delete(@RequestBody WorkerIO.Delete.Request requestDTO){
+        log.debug("REST Request to delete Workers");
+        workerService.delete(requestDTO);
+        return ResponseEntity.ok().build();
+    }
 
 }

@@ -54,7 +54,6 @@ server:
 
 
 # Application Properties
-
 application:
       async:
           core-pool-size : 5
@@ -62,14 +61,22 @@ application:
           queue-capacity: 100
           thread-name: Kraken-Async-Thread
       security:
-          jwt-token-signing-key: { REPLACE }
+          jwt-token-signing-key: helloworld
           jwt-token-validity-in-milliseconds: 8000000
-      password-list-settings:
-          folder-prefix: { REPLACE }
       kraken-request-settings:
-          folder-prefix: { REPLACE }
-      general:
+          folder-prefix: password-capture-storage
+          validation-prefix: validation
+      tracked-list-settings:
           job-size: 200000
+          job-expiry-in-milliseconds: 300000
+          job-expiry-task-delay-in-milliseconds: 1800000
+          crunch-list:
+              max-total-jobs: 200000
+          password-list:
+              cloud-storage-path: password-lists
+      worker-settings:
+          worker-expiry-in-milliseconds: 1800000
+          worker-offline-task-delay-in-milliseconds: 60000
 
 amazon:
     region: US_WEST_1
