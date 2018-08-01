@@ -2,6 +2,7 @@ package com.arcaneiceman.kraken.controller;
 
 import com.arcaneiceman.kraken.controller.io.WorkerIO;
 import com.arcaneiceman.kraken.domain.Worker;
+import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import com.arcaneiceman.kraken.security.AuthoritiesConstants;
 import com.arcaneiceman.kraken.service.WorkerService;
 import org.slf4j.Logger;
@@ -28,17 +29,18 @@ public class WorkerController {
         this.workerService = workerService;
     }
 
-    @PostMapping(value = "/worker/augment-token")
-    public ResponseEntity<WorkerIO.Augment.Response> augmentToken(@RequestBody WorkerIO.Augment.Request requestDTO) {
-        log.debug("Rest Request to Augment Token For Worker Login");
-        return ResponseEntity.ok(workerService.augmentToken(requestDTO));
-    }
-
     @PostMapping(value = "/worker")
     public ResponseEntity<Worker> create(@RequestBody WorkerIO.Create.Request requestDTO) throws URISyntaxException {
         log.debug("REST Request for Worker Create");
         Worker worker = workerService.create(requestDTO);
         return ResponseEntity.created(new URI("/api/worker")).body(worker);
+    }
+
+    @PostMapping(value = "/worker/augment-token")
+    public ResponseEntity<WorkerIO.Augment.Response> augmentToken(@RequestParam String workerName,
+                                                                  @RequestParam String workerType) {
+        log.debug("Rest Request to Augment Token For Worker Login");
+        return ResponseEntity.ok(workerService.augmentToken(workerName, WorkerType.valueOf(workerType)));
     }
 
     @PostMapping(value = "/worker/heartbeat")
@@ -48,16 +50,24 @@ public class WorkerController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping(value = "/worker")
-    public Page<Worker> getWorkers(Pageable pageable){
+    @GetMapping(value = "/workers")
+    public Page<Worker> getWorkers(Pageable pageable) {
         log.debug("REST Request to get Workers");
         return workerService.get(pageable);
     }
 
+    @GetMapping(value = "/worker")
+    public ResponseEntity<Worker> get(@RequestParam String workerName,
+                                      @RequestParam String workerType) {
+        log.debug("REST Request to get Worker with name {} and type {}", workerName, workerType);
+        return ResponseEntity.ok(workerService.get(workerName, WorkerType.valueOf(workerType), true));
+    }
+
     @DeleteMapping(value = "/worker")
-    public ResponseEntity<Void> delete(@RequestBody WorkerIO.Delete.Request requestDTO){
+    public ResponseEntity<Void> delete(@RequestParam String workerName,
+                                       @RequestParam String workerType) {
         log.debug("REST Request to delete Workers");
-        workerService.delete(requestDTO);
+        workerService.delete(workerName, WorkerType.valueOf(workerType));
         return ResponseEntity.ok().build();
     }
 

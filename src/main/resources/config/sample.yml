@@ -76,7 +76,7 @@ application:
               cloud-storage-path: password-lists
       worker-settings:
           worker-expiry-in-milliseconds: 1800000
-          worker-offline-task-delay-in-milliseconds: 60000
+          worker-offline-task-rate-in-milliseconds: 60000
 
 amazon:
     region: US_WEST_1

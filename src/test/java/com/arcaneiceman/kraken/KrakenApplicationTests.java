@@ -3,19 +3,15 @@ package com.arcaneiceman.kraken;
 import com.arcaneiceman.kraken.controller.io.AccountIO;
 import com.arcaneiceman.kraken.controller.io.RequestIO;
 import com.arcaneiceman.kraken.controller.io.WorkerIO;
-import com.arcaneiceman.kraken.domain.PasswordList;
-import com.arcaneiceman.kraken.domain.Request;
-import com.arcaneiceman.kraken.domain.User;
-import com.arcaneiceman.kraken.domain.Worker;
+import com.arcaneiceman.kraken.domain.*;
 import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.embedded.JobDelimiter;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
+import com.arcaneiceman.kraken.domain.enumerations.WorkerStatus;
+import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
-import com.arcaneiceman.kraken.repository.PasswordListRepository;
-import com.arcaneiceman.kraken.repository.RequestRepository;
-import com.arcaneiceman.kraken.repository.UserRepository;
-import com.arcaneiceman.kraken.repository.WorkerRepository;
+import com.arcaneiceman.kraken.repository.*;
 import com.arcaneiceman.kraken.security.AuthoritiesConstants;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +23,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,8 +34,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import java.util.ArrayList;
 
 import static com.arcaneiceman.kraken.domain.enumerations.WorkerType.CPU;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
@@ -57,6 +54,8 @@ public class KrakenApplicationTests {
     private PasswordListRepository passwordListRepository;
     @Autowired
     private WorkerRepository workerRepository;
+    @Autowired
+    private JobRepository jobRepository;
 
     private ObjectMapper mapper = new ObjectMapper();
 
@@ -128,8 +127,7 @@ public class KrakenApplicationTests {
         String authToken = login(a, status().isOk());
 
         // Worker Login Failure
-        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
-        workerLogin(c, authToken, status().is4xxClientError());
+        workerLogin("Atlantis-Remote", CPU, authToken, status().is4xxClientError());
     }
 
     @Test
@@ -156,8 +154,7 @@ public class KrakenApplicationTests {
         createWorker(b, authToken, status().is2xxSuccessful());
 
         // Worker Login Successfully
-        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
-        String workerAuthToken = workerLogin(c, authToken, status().isOk());
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
 
         // Worker Heartbeat Successfully
         workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
@@ -196,26 +193,129 @@ public class KrakenApplicationTests {
         createWorker(b, authToken, status().is2xxSuccessful());
 
         // Worker Login Successfully
-        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
-        String workerAuthToken = workerLogin(c, authToken, status().isOk());
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
 
         // Get Job Should return error (no heartbeat)
         getJob(workerAuthToken, status().is4xxClientError());
     }
 
     @Test
-    public void RemoveWorkerWhileItHasJob() {
+    public void LetWorkerTimeOutWithoutJob() throws Exception {
+        // Login Successfully
+        AccountIO.Authenticate.Request a =
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
+        String authToken = login(a, status().isOk());
 
+        // Create Worker Successfully
+        WorkerIO.Create.Request b = new WorkerIO.Create.Request(CPU, "Atlantis-Remote");
+        createWorker(b, authToken, status().is2xxSuccessful());
+
+        // Worker Login Successfully
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
+
+        // Worker Heartbeat Successfully
+        workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
+
+        // Sleep for 10 Seconds
+        Thread.sleep(10000);
+
+        //Get Worker
+        Worker worker = getWorker("Atlantis-Remote", CPU, authToken, status().is2xxSuccessful());
+        assert worker != null;
+        Assert.assertNull(worker.getJob());
+        Assert.assertTrue(worker.getStatus() == WorkerStatus.OFFLINE);
     }
 
     @Test
-    public void LetWorkerTimeOutWithoutJob() {
+    public void RemoveWorkerWhileItHasJob() throws Exception {
+        // Login Successfully
+        AccountIO.Authenticate.Request a =
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
+        String authToken = login(a, status().isOk());
 
+        // Create Request Successfully
+        RequestIO.Create.Request bb = new RequestIO.Create.Request(
+                RequestType.MATCH,
+                new MatchRequestDetail("hellohello"),
+                new ArrayList<String>() {{
+                    add("test.txt");
+                }},
+                new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
+                    add(new RequestIO.Create.Request.CrunchParams(4, 4, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
+                }});
+        Request request = createMatchRequest(bb, authToken, status().is2xxSuccessful());
+
+        // Create Worker Successfully
+        WorkerIO.Create.Request b = new WorkerIO.Create.Request(CPU, "Atlantis-Remote");
+        createWorker(b, authToken, status().is2xxSuccessful());
+
+        // Worker Login Successfully
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
+
+        // Worker Heartbeat Successfully
+        workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
+
+        // Get Job Successfully
+        RequestIO.GetJob.Response jobResponse = getJob(workerAuthToken, status().is2xxSuccessful());
+
+        // Remove Worker
+        deleteWorker("Atlantis-Remote", CPU, authToken, status().is2xxSuccessful());
+
+        // Get Worker
+        Worker worker = getWorker("Atlantis-Remote", CPU, authToken, status().is4xxClientError());
+
+        // Get Job
+        assert jobResponse != null;
+        Assert.assertNotNull(jobRepository.findById(jobResponse.getJobId()).get());
     }
 
     @Test
-    public void LetWorkerTimeoutWithJob() {
+    /* Will Test Both Scheduled Jobs */
+    public void LetWorkerTimeoutWithJob() throws Exception {
+        // Login Successfully
+        AccountIO.Authenticate.Request a =
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
+        String authToken = login(a, status().isOk());
 
+        // Create Request Successfully
+        RequestIO.Create.Request bb = new RequestIO.Create.Request(
+                RequestType.MATCH,
+                new MatchRequestDetail("hellohello"),
+                new ArrayList<String>() {{
+                    add("test.txt");
+                }},
+                new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
+                    add(new RequestIO.Create.Request.CrunchParams(4, 4, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
+                }});
+        Request request = createMatchRequest(bb, authToken, status().is2xxSuccessful());
+
+        // Create Worker Successfully
+        WorkerIO.Create.Request b = new WorkerIO.Create.Request(CPU, "Atlantis-Remote");
+        createWorker(b, authToken, status().is2xxSuccessful());
+
+        // Worker Login Successfully
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
+
+        // Worker Heartbeat Successfully
+        workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
+
+        // Get Job Successfully
+        RequestIO.GetJob.Response jobResponse = getJob(workerAuthToken, status().is2xxSuccessful());
+
+        // Sleep for 10 Seconds
+        Thread.sleep(10000);
+
+        //Get Worker Must be offline
+        Worker worker = getWorker("Atlantis-Remote", CPU, authToken, status().is2xxSuccessful());
+        assert worker != null;
+        Assert.assertNull(worker.getJob());
+        Assert.assertTrue(worker.getStatus() == WorkerStatus.OFFLINE);
+
+        // Get Job Must be Pending with error count
+        assert jobResponse != null;
+        Job job = jobRepository.findById(jobResponse.getJobId()).get();
+        Assert.assertTrue(job.getErrorCount() > 0);
+        Assert.assertTrue(job.getTrackingStatus() == TrackingStatus.PENDING);
     }
 
     @Test
@@ -230,8 +330,7 @@ public class KrakenApplicationTests {
         createWorker(b, authToken, status().is2xxSuccessful());
 
         // Worker Login Successfully
-        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
-        String workerAuthToken = workerLogin(c, authToken, status().isOk());
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
 
         // Worker Heartbeat Successfully
         workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
@@ -264,8 +363,7 @@ public class KrakenApplicationTests {
         createWorker(b, authToken, status().is2xxSuccessful());
 
         // Worker Login Successfully
-        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
-        String workerAuthToken = workerLogin(c, authToken, status().isOk());
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
 
         for (int i = 0; i < 11; i++) {
             // Worker Heartbeat Successfully
@@ -314,8 +412,7 @@ public class KrakenApplicationTests {
         createWorker(b, authToken, status().is2xxSuccessful());
 
         // Worker Login Successfully
-        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
-        String workerAuthToken = workerLogin(c, authToken, status().isOk());
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
 
         // Worker Heartbeat Successfully
         workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
@@ -361,15 +458,13 @@ public class KrakenApplicationTests {
         WorkerIO.Create.Request b1 = new WorkerIO.Create.Request(CPU, "Atlantis-Remote-1");
         createWorker(b1, authToken, status().is2xxSuccessful());
         // Worker 1 Login Successfully
-        WorkerIO.Augment.Request c1 = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote-1");
-        String workerAuthToken1 = workerLogin(c1, authToken, status().isOk());
+        String workerAuthToken1 = workerLogin("Atlantis-Remote-1", CPU, authToken, status().isOk());
 
         // Create Worker 2 Successfully
         WorkerIO.Create.Request b2 = new WorkerIO.Create.Request(CPU, "Atlantis-Remote-2");
         createWorker(b2, authToken, status().is2xxSuccessful());
         // Worker 2 Login Successfully
-        WorkerIO.Augment.Request c2 = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote-2");
-        String workerAuthToken2 = workerLogin(c2, authToken, status().isOk());
+        String workerAuthToken2 = workerLogin("Atlantis-Remote-2", CPU, authToken, status().isOk());
 
         for (int i = 0; i < 5; i++) {
             // Worker 1 Heartbeat Successfully
@@ -381,9 +476,6 @@ public class KrakenApplicationTests {
             // Get Job 1 Successfully
             RequestIO.GetJob.Response jobResponse1 = getJob(workerAuthToken1, status().is2xxSuccessful());
 
-            // Get Job 2 Successfully
-            RequestIO.GetJob.Response jobResponse2 = getJob(workerAuthToken2, status().is2xxSuccessful());
-
             // Report Job 1 Complete Successfully
             assert jobResponse1 != null;
             RequestIO.ReportJob.Request d1 = new RequestIO.ReportJob.Request(
@@ -393,6 +485,9 @@ public class KrakenApplicationTests {
                     TrackingStatus.COMPLETE,
                     null);
             reportJob(d1, workerAuthToken1, status().is2xxSuccessful());
+
+            // Get Job 2 Successfully
+            RequestIO.GetJob.Response jobResponse2 = getJob(workerAuthToken2, status().is2xxSuccessful());
 
             // Report Job 2 Complete Successfully
             assert jobResponse2 != null;
@@ -424,7 +519,51 @@ public class KrakenApplicationTests {
 
     @Test
     public void ExecuteWPARequest() throws Exception {
+        // Login Successfully
+        AccountIO.Authenticate.Request a =
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
+        String authToken = login(a, status().isOk());
 
+        // Create Request Successfully
+        RequestIO.Create.Request bb = new RequestIO.Create.Request(
+                RequestType.MATCH,
+                new MatchRequestDetail("hellohello"),
+                new ArrayList<String>() {{
+                    add("test.txt");
+                }},
+                new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
+                    add(new RequestIO.Create.Request.CrunchParams(4, 4, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
+                }});
+        Request request = createWPARequest(bb, authToken, status().is2xxSuccessful());
+
+        // Create Worker Successfully
+        WorkerIO.Create.Request b = new WorkerIO.Create.Request(CPU, "Atlantis-Remote");
+        createWorker(b, authToken, status().is2xxSuccessful());
+
+        // Worker Login Successfully
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
+
+        for (int i = 0; i < 11; i++) {
+            // Worker Heartbeat Successfully
+            workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
+
+            // Get Job Successfully
+            RequestIO.GetJob.Response jobResponse = getJob(workerAuthToken, status().is2xxSuccessful());
+
+            // Report Job Complete Successfully
+            Assert.assertNotNull(jobResponse);
+            RequestIO.ReportJob.Request d = new RequestIO.ReportJob.Request(
+                    jobResponse.getRequestId(),
+                    jobResponse.getListId(),
+                    jobResponse.getJobId(),
+                    TrackingStatus.COMPLETE,
+                    null);
+            reportJob(d, workerAuthToken, status().is2xxSuccessful());
+        }
+
+        // Request Should be complete (not exist)
+        Assert.assertNotNull(request);
+        Assert.assertFalse(requestRepository.existsById(request.getId()));
     }
 
     @Test
@@ -451,8 +590,7 @@ public class KrakenApplicationTests {
         createWorker(b, authToken, status().is2xxSuccessful());
 
         // Worker Login Successfully
-        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
-        String workerAuthToken = workerLogin(c, authToken, status().isOk());
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
 
         for (int i = 0; i < 11; i++) {
             // Worker Heartbeat Successfully
@@ -477,13 +615,56 @@ public class KrakenApplicationTests {
     }
 
     @Test
-    public void ReportPasswordListJobError() throws Exception {
+    public void ReportJobErrors() throws Exception {
+        // Login Successfully
+        AccountIO.Authenticate.Request a =
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
+        String authToken = login(a, status().isOk());
 
-    }
+        // Create Request Successfully
+        RequestIO.Create.Request bb = new RequestIO.Create.Request(
+                RequestType.MATCH,
+                new MatchRequestDetail("hellohello"),
+                new ArrayList<String>() {{
+                    add("test.txt");
+                }},
+                new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
+                    add(new RequestIO.Create.Request.CrunchParams(4, 4, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
+                }});
+        Request request = createMatchRequest(bb, authToken, status().is2xxSuccessful());
 
-    @Test
-    public void ReportCrunchListJobError() throws Exception {
+        // Create Worker Successfully
+        WorkerIO.Create.Request b = new WorkerIO.Create.Request(CPU, "Atlantis-Remote");
+        createWorker(b, authToken, status().is2xxSuccessful());
 
+        // Worker Login Successfully
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
+
+        for (int i = 0; i < 33; i++) {
+            // Worker Heartbeat Successfully
+            workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
+
+            // Get Job Successfully
+            RequestIO.GetJob.Response jobResponse = getJob(workerAuthToken, status().is2xxSuccessful());
+
+            // Report Job Complete Successfully
+            Assert.assertNotNull(jobResponse);
+            RequestIO.ReportJob.Request d = new RequestIO.ReportJob.Request(
+                    jobResponse.getRequestId(),
+                    jobResponse.getListId(),
+                    jobResponse.getJobId(),
+                    TrackingStatus.ERROR,
+                    null);
+            reportJob(d, workerAuthToken, status().is2xxSuccessful());
+
+            Job job = jobRepository.findById(jobResponse.getJobId()).orElse(null);
+            if (job != null)
+                Assert.assertTrue(job.getErrorCount() > 0 && job.getErrorCount() < 3);
+        }
+
+        // Request Should be complete (not exist)
+        Assert.assertNotNull(request);
+        Assert.assertFalse(requestRepository.existsById(request.getId()));
     }
 
     @Test
@@ -508,8 +689,7 @@ public class KrakenApplicationTests {
         createWorker(b, authToken, status().is2xxSuccessful());
 
         // Worker Login Successfully
-        WorkerIO.Augment.Request c = new WorkerIO.Augment.Request(CPU, "Atlantis-Remote");
-        String workerAuthToken = workerLogin(c, authToken, status().isOk());
+        String workerAuthToken = workerLogin("Atlantis-Remote", CPU, authToken, status().isOk());
 
         // Worker Heartbeat Successfully
         workerHeartbeat(workerAuthToken, status().is2xxSuccessful());
@@ -599,17 +779,46 @@ public class KrakenApplicationTests {
         }
     }
 
-    private String workerLogin(WorkerIO.Augment.Request workerRequest, String authToken, ResultMatcher resultMatcher) throws Exception {
+    private String workerLogin(String workerName, WorkerType workerType, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult tokenResult = mockMvc.perform(post("/api/worker/augment-token")
                 .with(request -> {
-                    request.addHeader("Content-Type", "application/json");
                     request.addHeader("Authorization", "Bearer " + authToken);
                     return request;
-                }).content(mapper.writeValueAsString(workerRequest)))
+                }).param("workerName", workerName).param("workerType", workerType.toString()))
                 .andExpect(resultMatcher)
                 .andReturn();
         try {
             return mapper.readValue(tokenResult.getResponse().getContentAsString(), WorkerIO.Augment.Response.class).getToken();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Worker getWorker(String workerName, WorkerType workerType, String authToken, ResultMatcher resultMatcher) throws Exception {
+        MvcResult tokenResult = mockMvc.perform(get("/api/worker")
+                .with(request -> {
+                    request.addHeader("Authorization", "Bearer " + authToken);
+                    return request;
+                }).param("workerName", workerName).param("workerType", workerType.toString()))
+                .andExpect(resultMatcher)
+                .andReturn();
+        try {
+            return mapper.readValue(tokenResult.getResponse().getContentAsString(), Worker.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Worker deleteWorker(String workerName, WorkerType workerType, String authToken, ResultMatcher resultMatcher) throws Exception {
+        MvcResult tokenResult = mockMvc.perform(delete("/api/worker")
+                .with(request -> {
+                    request.addHeader("Authorization", "Bearer " + authToken);
+                    return request;
+                }).param("workerName", workerName).param("workerType", workerType.toString()))
+                .andExpect(resultMatcher)
+                .andReturn();
+        try {
+            return mapper.readValue(tokenResult.getResponse().getContentAsString(), Worker.class);
         } catch (Exception e) {
             return null;
         }
@@ -627,6 +836,25 @@ public class KrakenApplicationTests {
 
     private Request createMatchRequest(RequestIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/requests")
+                .with(request -> {
+                    request.addHeader("Authorization", "Bearer " + authToken);
+                    return request;
+                }).param("details", mapper.writeValueAsString(req)))
+                .andExpect(resultMatcher)
+                .andReturn();
+        mapper.addMixIn(Request.class, IgnoreRequestDetailsMixIn.class);
+        try {
+            return mapper.readValue(result.getResponse().getContentAsString(), Request.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Request createWPARequest(RequestIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
+        MockMultipartFile mockMultipartFile =
+                new MockMultipartFile("capture-file", new ClassPathResource("wpa.full.cap").getInputStream());
+        MvcResult result = mockMvc.perform(multipart("/api/requests")
+                .file(mockMultipartFile)
                 .with(request -> {
                     request.addHeader("Authorization", "Bearer " + authToken);
                     return request;

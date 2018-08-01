@@ -56,7 +56,8 @@ public class JobService {
 
     List<Job> getExpiredJobs() {
         // submittedAt < currentTime - expiryTime
-        return jobRepository.findBySubmittedAtBefore(new Date(new Date().getTime() - Long.parseLong(jobExpiry)));
+        return jobRepository.findByTrackingStatusAndSubmittedAtBefore(TrackingStatus.RUNNING,
+                new Date(new Date().getTime() - Long.parseLong(jobExpiry)));
     }
 
 }

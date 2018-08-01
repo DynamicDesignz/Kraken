@@ -36,7 +36,7 @@ public class RequestController {
     @PostMapping(value = "/requests")
     public ResponseEntity<Request> createWPA(
             @RequestParam(value = "details") String unmarshalledRequestDTO,
-            @RequestParam(value = "packet-capture-file", required = false) MultipartFile passwordCaptureFile)
+            @RequestParam(value = "capture-file", required = false) MultipartFile passwordCaptureFile)
             throws IOException, URISyntaxException {
         log.debug("REST Request to create WPA Request");
         Request request = requestService.create(

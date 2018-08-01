@@ -3,6 +3,7 @@ package com.arcaneiceman.kraken.domain;
 import com.arcaneiceman.kraken.domain.abs.MtoOPermissionEntity;
 import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
@@ -13,6 +14,7 @@ import java.util.List;
 /**
  * Created by Wali on 4/21/2018.
  */
+@ToString(exclude = "worker")
 @EqualsAndHashCode(callSuper = false, of = "indexNumber")
 @Getter
 @Setter
@@ -36,6 +38,7 @@ public class Job extends MtoOPermissionEntity<TrackedList> {
     private Integer indexNumber;
 
     @Column
+    @Enumerated(EnumType.STRING)
     private TrackingStatus trackingStatus;
 
     @Column
@@ -50,6 +53,7 @@ public class Job extends MtoOPermissionEntity<TrackedList> {
     @Column
     private Date submittedAt;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Worker worker;
 
@@ -57,6 +61,7 @@ public class Job extends MtoOPermissionEntity<TrackedList> {
     private void preRemove() {
         if (worker != null)
             worker.setJob(null);
+        worker = null;
     }
 
     @Transient

@@ -34,14 +34,19 @@ public class WorkerService {
     private WorkerRepository workerRepository;
     private final TokenProvider tokenProvider;
     private UserService userService;
+    private JobService jobService;
 
     @Value("${application.worker-settings.worker-expiry-in-milliseconds}")
     private String workerExpiryTime;
 
-    public WorkerService(WorkerRepository workerRepository, TokenProvider tokenProvider, UserService userService) {
+    public WorkerService(WorkerRepository workerRepository,
+                         TokenProvider tokenProvider,
+                         UserService userService,
+                         JobService jobService) {
         this.workerRepository = workerRepository;
         this.tokenProvider = tokenProvider;
         this.userService = userService;
+        this.jobService = jobService;
     }
 
     @PostConstruct
@@ -49,20 +54,6 @@ public class WorkerService {
         if (workerExpiryTime == null || workerExpiryTime.isEmpty())
             throw new RuntimeException("Application Worker Service - " +
                     "Worker Expiry Time Not Specified");
-    }
-
-    public WorkerIO.Augment.Response augmentToken(WorkerIO.Augment.Request requestDTO) {
-        User user = userService.getUserOrThrow();
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (!workerRepository.existsById(new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId())))
-            throw new SystemException(452, "Worker with name " + requestDTO.getWorkerName() +
-                    " and type " + requestDTO.getWorkerType() + " not found", Status.NOT_FOUND);
-        String jwt = tokenProvider.createToken(
-                user.getLogin(),
-                authentication,
-                requestDTO.getWorkerName(),
-                requestDTO.getWorkerType());
-        return new WorkerIO.Augment.Response(jwt);
     }
 
     public Worker create(WorkerIO.Create.Request requestDTO) {
@@ -75,23 +66,38 @@ public class WorkerService {
         return workerRepository.save(worker);
     }
 
-    public Worker get(String workerName, WorkerType workerType) {
+    public WorkerIO.Augment.Response augmentToken(String workerName, WorkerType workerType) {
+        get(workerName, workerType);
         User user = userService.getUserOrThrow();
-        return workerRepository.findById(new WorkerPK(workerName, workerType, user.getId()))
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String jwt = tokenProvider.createToken(
+                user.getLogin(),
+                authentication,
+                workerName,
+                workerType);
+        return new WorkerIO.Augment.Response(jwt);
+    }
+
+    public Worker get(String workerName, WorkerType workerType) {
+        return get(workerName, workerType, false);
+    }
+
+    public Worker get(String workerName, WorkerType workerType, boolean pullJob) {
+        User user = userService.getUserOrThrow();
+        Worker worker = workerRepository.findById(new WorkerPK(workerName, workerType, user.getId()))
                 .orElseThrow(() -> new SystemException(452, "Worker with name " + workerName +
                         " and type " + workerType + " not found", Status.NOT_FOUND));
+        if (pullJob && worker.getJob() != null) {
+            String lazyLoader = worker.getJob().toString();
+        }
+        return worker;
     }
 
     public Worker get(HttpServletRequest httpServletRequest) {
-        User user = userService.getUserOrThrow();
         String workerName = (String) httpServletRequest.getAttribute(WORKER_NAME);
         WorkerType workerType = httpServletRequest.getAttribute(WORKER_TYPE) != null ?
                 WorkerType.valueOf((String) httpServletRequest.getAttribute(WORKER_TYPE)) : null;
-        if (workerName == null || workerType == null)
-            throw new SystemException(23, "Worker Details Not Found", Status.BAD_REQUEST);
-        return workerRepository.findById(new WorkerPK(workerName, workerType, user.getId()))
-                .orElseThrow(() -> new SystemException(452, "Worker with name " + workerName +
-                        " and type " + workerType + " not found", Status.NOT_FOUND));
+        return get(workerName, workerType);
     }
 
     public Page<Worker> get(Pageable pageable) {
@@ -100,32 +106,22 @@ public class WorkerService {
     }
 
     public void heartbeat(HttpServletRequest httpServletRequest) {
-        User user = userService.getUserOrThrow();
-        String workerName = (String) httpServletRequest.getAttribute(WORKER_NAME);
-        WorkerType workerType = WorkerType.valueOf((String) httpServletRequest.getAttribute(WORKER_TYPE));
-        Worker worker = workerRepository.findById(
-                new WorkerPK(workerName, workerType, user.getId()))
-                .orElseThrow(() -> new SystemException(452, "Worker with name " + workerName +
-                        " and type " + workerType + " not found", Status.NOT_FOUND));
+        Worker worker = get(httpServletRequest);
         worker.setStatus(WorkerStatus.ONLINE);
         worker.setLastCheckIn(new Date());
         workerRepository.save(worker);
     }
 
-    public void delete(WorkerIO.Delete.Request requestDTO) {
-        User user = userService.getUserOrThrow();
-        WorkerPK pk = new WorkerPK(requestDTO.getWorkerName(), requestDTO.getWorkerType(), user.getId());
-        if (!workerRepository.existsById(pk))
-            throw new SystemException(452, "Worker with name " + requestDTO.getWorkerName() +
-                    " and type " + requestDTO.getWorkerType() + " not found", Status.NOT_FOUND);
-        workerRepository.deleteById(pk);
+    public void delete(String workerName, WorkerType workerType) {
+        Worker worker = get(workerName, workerType);
+        workerRepository.delete(worker);
     }
 
     // TODO : Make this a Quartz Job
-    @Scheduled(initialDelay = 5000L, fixedDelayString = "${application.worker-settings.worker-offline-task-delay-in-milliseconds}")
+    @Scheduled(initialDelay = 5000L, fixedRateString = "${application.worker-settings.worker-offline-task-rate-in-milliseconds}")
     public void expireWorker() {
         // lastCheckedIn < currentTime - expiryTime
-        List<Worker> offlineWorkers = workerRepository.getByLastCheckInBefore(
+        List<Worker> offlineWorkers = workerRepository.getByStatusAndLastCheckInBefore(WorkerStatus.ONLINE,
                 new Date(new Date().getTime() - Long.parseLong(workerExpiryTime)));
         for (Worker worker : offlineWorkers) {
             worker.setStatus(WorkerStatus.OFFLINE);

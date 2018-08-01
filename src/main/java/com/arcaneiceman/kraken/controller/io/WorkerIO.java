@@ -13,18 +13,6 @@ public class WorkerIO {
     public static class Augment {
 
         @Getter
-        @AllArgsConstructor
-        @NoArgsConstructor
-        public static class Request {
-
-            @NotNull
-            private WorkerType workerType;
-
-            @NotBlank
-            private String workerName;
-        }
-
-        @Getter
         @NoArgsConstructor
         @AllArgsConstructor
         public static class Response {
@@ -48,19 +36,4 @@ public class WorkerIO {
             private String workerName;
         }
     }
-
-    public static class Delete {
-
-        @Getter
-        @NoArgsConstructor
-        public static class Request {
-
-            @NotNull
-            private WorkerType workerType;
-
-            @NotBlank
-            private String workerName;
-        }
-    }
-
 }

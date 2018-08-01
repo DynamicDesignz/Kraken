@@ -134,11 +134,16 @@ public class TrackedListService {
         // Check if there are any jobs in the job queue (which may have timed out or reported as error)
         for (Job job : trackedList.getJobQueue()) {
             if (job.getTrackingStatus() == TrackingStatus.PENDING)
-                // Fetch Candidate Values, Mark as RUNNING and return
                 try {
+                    // Fetch Candidate Values, Mark as RUNNING and return
                     job.setValues(getCandidateValues(trackedList, job.getStart(), job.getEnd()));
                     job.setTrackingStatus(TrackingStatus.RUNNING);
                     job.setSubmittedAt(new Date());
+
+                    // Associate Worker with Job
+                    worker.setJob(job);
+                    job.setWorker(worker);
+
                     trackedListRepository.save(trackedList);
                     return job;
                 }
@@ -256,13 +261,16 @@ public class TrackedListService {
         TrackedList trackedList = trackedListPermissionLayer.getWithOwner(trackedListId, request);
         Job job = jobService.get(jobId, trackedList);
 
-        // Remove association between job and worker
-        if (!worker.getJob().equals(job))
-            throw new SystemException(2342, "This worker was not running reported job", Status.BAD_REQUEST);
-        else {
-            worker.setJob(null);
+        // If Worker is reporting a job, check if it was assigned this job
+        if (worker != null && worker.getJob() != null && job.getWorker() != null)
+            if (!Objects.equals(worker.getJob(), job))
+                throw new SystemException(2342, "This worker was not running reported job", Status.BAD_REQUEST);
+
+        // Remove Worker and Job Association
+        if (job.getWorker() != null)
             job.setWorker(null);
-        }
+        if (worker != null && worker.getJob() != null)
+            worker.setJob(null);
 
         // Based on tracking status
         switch (trackingStatus) {
@@ -276,7 +284,7 @@ public class TrackedListService {
                 // Increment Error Count
                 job.setErrorCount(job.getErrorCount() + 1);
                 // If Error Count is above 3, remove it from queue and add it to error count
-                if (job.getErrorCount() > 3) {
+                if (job.getErrorCount() >= 3) {
                     trackedList.getJobQueue().remove(job);
                     trackedList.setErrorJobCount(trackedList.getErrorJobCount() + 1);
                 }

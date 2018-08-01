@@ -37,6 +37,7 @@ public class Worker {
     private void preRemove() {
         if (job != null)
             job.setWorker(null);
+        job = null;
     }
 
 }
