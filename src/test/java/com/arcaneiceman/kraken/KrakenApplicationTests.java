@@ -526,7 +526,7 @@ public class KrakenApplicationTests {
 
         // Create Request Successfully
         RequestIO.Create.Request bb = new RequestIO.Create.Request(
-                RequestType.MATCH,
+                RequestType.WPA,
                 new MatchRequestDetail("hellohello"),
                 new ArrayList<String>() {{
                     add("test.txt");

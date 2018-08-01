@@ -5,8 +5,8 @@ import com.arcaneiceman.kraken.domain.User;
 import com.arcaneiceman.kraken.repository.UserRepository;
 import com.arcaneiceman.kraken.security.AuthoritiesConstants;
 import com.arcaneiceman.kraken.security.SecurityUtils;
-import com.arcaneiceman.kraken.util.RandomUtil;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class UserService {
         if (user == null)
             throw new SystemException(2, "Could not find user with mail " + requestDTO.getMail(), BAD_REQUEST);
         user.setResetDate(Instant.now());
-        user.setResetKey(RandomUtil.generateResetKey());
+        user.setResetKey(RandomStringUtils.randomNumeric(20));
         user = userRepository.save(user);
 
         // TODO Send Reset Email
