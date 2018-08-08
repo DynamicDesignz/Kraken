@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.arcaneiceman.kraken.config.Constants.*;
 import static org.zalando.problem.Status.BAD_REQUEST;
+import static org.zalando.problem.Status.NOT_FOUND;
 
 @Service
 @Transactional
@@ -54,7 +55,9 @@ public class WPARequestDetailService {
         // Clear any id if present
         wpaRequestDetail.setId(null);
 
-        // Validate Capture file and Upload File it
+        String validationErrorMessage = null;
+
+        // Validate Capture File using Aircrack
         Path tempFilePath = Paths.get(passwordCaptureValidationPath, UUID.randomUUID().toString());
         try {
             if (!Files.exists(tempFilePath))
@@ -65,20 +68,25 @@ public class WPARequestDetailService {
                     ConsoleCommandUtil.OutputStream.OUT,
                     "aircrack-ng", tempFilePath.toString(), "-b", wpaRequestDetail.getSsid());
             if (response == null)
-                throw new RuntimeException("Did not get response from aircrack");
-            if (!response.contains(VALID_FILE))
-                if (response.contains(INVALID_SSID))
-                    throw new RuntimeException("SSID was not found in the capture");
+                validationErrorMessage = "Did not get response from aircrack";
+            else if (!response.contains(VALID_FILE))
+                if (response.contains(INVALID_BSSID))
+                    validationErrorMessage = "Network name was invalid";
                 else if (response.contains(INVALID_FILE))
-                    throw new RuntimeException("Could not understand capture file");
-        } catch (Exception e) {
-            throw new SystemException(21312, "Error processing the capture file: " + e.getMessage(), BAD_REQUEST);
+                    validationErrorMessage = "Aircrack did not recognize this file format";
+                else
+                    validationErrorMessage = "Unknown Error while processing pcap file";
+        } catch (Exception ignored) {
         } finally {
             try {
                 Files.deleteIfExists(tempFilePath);
             } catch (IOException ignored) {
             }
         }
+
+        if (validationErrorMessage != null)
+            throw new SystemException(22342, validationErrorMessage, BAD_REQUEST);
+
         String fileKey = fileUploadService.uploadFile(passwordCaptureFile, passwordCaptureStoragePath + "/");
         wpaRequestDetail.setPasswordCaptureFileKey(fileKey);
 
@@ -88,13 +96,15 @@ public class WPARequestDetailService {
 
     @Transactional(readOnly = true)
     public WPARequestDetail get(Long id) {
-        WPARequestDetail wpaRequestDetail = wpaRequestDetailRepository.getOne(id);
+        WPARequestDetail wpaRequestDetail = wpaRequestDetailRepository.findById(id)
+                .orElseThrow(() -> new SystemException(34, "WPA Request with id " + id + " not found", NOT_FOUND));
         wpaRequestDetail.setPasswordCaptureFileUrl(fileUploadService.getLink(wpaRequestDetail.getPasswordCaptureFileKey()));
         return wpaRequestDetail;
     }
 
     public void delete(Long id) {
-        WPARequestDetail wpaRequestDetail = wpaRequestDetailRepository.getOne(id);
+        WPARequestDetail wpaRequestDetail = wpaRequestDetailRepository.findById(id)
+                .orElseThrow(() -> new SystemException(34, "WPA Request with id " + id + " not found", NOT_FOUND));
         if (wpaRequestDetail.getPasswordCaptureFileKey() != null)
             fileUploadService.deleteFile(wpaRequestDetail.getPasswordCaptureFileKey());
         wpaRequestDetailRepository.delete(wpaRequestDetail);

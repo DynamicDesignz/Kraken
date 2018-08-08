@@ -5,7 +5,6 @@ import com.arcaneiceman.kraken.domain.Job;
 import com.arcaneiceman.kraken.domain.Request;
 import com.arcaneiceman.kraken.domain.User;
 import com.arcaneiceman.kraken.domain.Worker;
-import com.arcaneiceman.kraken.domain.abs.RequestDetail;
 import com.arcaneiceman.kraken.domain.abs.TrackedList;
 import com.arcaneiceman.kraken.domain.enumerations.RequestType;
 import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
@@ -14,9 +13,10 @@ import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
 import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.repository.RequestRepository;
 import com.arcaneiceman.kraken.service.permission.abs.RequestPermissionLayer;
-import com.arcaneiceman.kraken.service.request.detail.MatchRequestDetailService;
-import com.arcaneiceman.kraken.service.request.detail.WPARequestDetailService;
+import com.arcaneiceman.kraken.service.request.detail.RequestDetailService;
 import com.arcaneiceman.kraken.util.exceptions.SystemException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,23 +34,21 @@ public class RequestService {
     private WorkerService workerService;
     private RequestPermissionLayer requestPermissionLayer;
     private RequestRepository requestRepository;
-    private WPARequestDetailService wpaRequestDetailService;
-    private MatchRequestDetailService matchRequestDetailService;
+    private RequestDetailService requestDetailService;
     private TrackedListService trackedListService;
+    private ResultService resultService;
 
     public RequestService(UserService userService,
                           WorkerService workerService, RequestPermissionLayer requestPermissionLayer,
                           RequestRepository requestRepository,
-                          WPARequestDetailService wpaRequestDetailService,
-                          MatchRequestDetailService matchRequestDetailService,
-                          TrackedListService trackedListService) {
+                          RequestDetailService requestDetailService, TrackedListService trackedListService, ResultService resultService) {
         this.userService = userService;
         this.workerService = workerService;
         this.requestPermissionLayer = requestPermissionLayer;
         this.requestRepository = requestRepository;
-        this.wpaRequestDetailService = wpaRequestDetailService;
-        this.matchRequestDetailService = matchRequestDetailService;
+        this.requestDetailService = requestDetailService;
         this.trackedListService = trackedListService;
+        this.resultService = resultService;
     }
 
     public Request create(RequestIO.Create.Request requestDTO, MultipartFile passwordCaptureFile) {
@@ -62,13 +60,14 @@ public class RequestService {
         // Set Request Detail
         switch (requestDTO.getRequestType()) {
             case WPA:
-                request.setRequestDetail(
-                        wpaRequestDetailService.create((WPARequestDetail) requestDTO.getRequestDetail(), passwordCaptureFile));
+                request.setRequestDetail(requestDetailService.createWPARequest(
+                        (WPARequestDetail) requestDTO.getRequestDetail(),
+                        passwordCaptureFile));
                 request.setRequestType(RequestType.WPA);
                 break;
             case MATCH:
-                request.setRequestDetail(
-                        matchRequestDetailService.create((MatchRequestDetail) requestDTO.getRequestDetail()));
+                request.setRequestDetail(requestDetailService.createMatchRequest(
+                        (MatchRequestDetail) requestDTO.getRequestDetail()));
                 request.setRequestType(RequestType.MATCH);
                 break;
         }
@@ -93,11 +92,16 @@ public class RequestService {
     public Request get(Long id) {
         User user = userService.getUserOrThrow();
         Request request = requestPermissionLayer.getWithOwner(id, user);
-        request.setRequestDetail(getRequestDetail(request));
+        request.setRequestDetail(requestDetailService.get(request.getRequestType(), request.getRequestDetail().getId()));
         request.setTotalJobCount(request.getTrackedLists().stream().mapToInt(TrackedList::getTotalJobCount).sum());
         request.setErrorJobCount(request.getTrackedLists().stream().mapToInt(TrackedList::getErrorJobCount).sum());
         request.setCompletedJobCount(request.getTrackedLists().stream().mapToInt(TrackedList::getCompletedJobCount).sum());
         return request;
+    }
+
+    public Page<Request> get(Pageable pageable) {
+        User user = userService.getUserOrThrow();
+        return requestRepository.findByOwner(pageable, user);
     }
 
     public RequestIO.GetJob.Response getJob(HttpServletRequest httpServletRequest) {
@@ -118,7 +122,7 @@ public class RequestService {
                     if (job != null)
                         return new RequestIO.GetJob.Response(
                                 request.getRequestType(),
-                                getRequestDetail(request),
+                                requestDetailService.get(request.getRequestType(), request.getRequestDetail().getId()),
                                 request.getId(),
                                 trackedList.getId(),
                                 job.getId(),
@@ -131,7 +135,7 @@ public class RequestService {
                     trackedList.getStatus() == TrackingStatus.COMPLETE
                             || trackedList.getStatus() == TrackingStatus.ERROR)) {
                 // TODO : Mark Request As Complete
-                retireActiveRequest(request.getId());
+                retireRequest(request.getId());
                 throw new SystemException(2423, "Request with id" + request.getId() + " is complete", BAD_REQUEST);
             }
         }
@@ -149,8 +153,7 @@ public class RequestService {
             throw new SystemException(242, "Worker is currently OFFLINE", BAD_REQUEST);
 
         if (requestDTO.getResult() != null && !requestDTO.getResult().isEmpty()) {
-            // TODO : Mark Request As Complete
-            retireActiveRequest(request.getId());
+            retireRequest(request.getId(), requestDTO.getResult());
         } else
             trackedListService.reportJob(requestDTO.getJobId(), requestDTO.getListId(), request,
                     requestDTO.getTrackingStatus(), worker);
@@ -159,39 +162,24 @@ public class RequestService {
         if (request.getTrackedLists().stream().allMatch(trackedList ->
                 trackedList.getStatus() == TrackingStatus.COMPLETE
                         || trackedList.getStatus() == TrackingStatus.ERROR)) {
-            // TODO : Mark Request As Complete
-            retireActiveRequest(request.getId());
+            retireRequest(request.getId());
         }
     }
 
-    public void retireActiveRequest(Long id) {
-        Request request = requestPermissionLayer.get(id);
-        switch (request.getRequestType()) {
-            case WPA:
-                wpaRequestDetailService.delete(request.getRequestDetail().getId());
-                break;
-            case MATCH:
-                matchRequestDetailService.delete(request.getRequestDetail().getId());
-                break;
-        }
+    public void retireRequest(Long id, String value) {
+        User user = userService.getUserOrThrow();
+        Request request = requestPermissionLayer.getWithOwner(id, user);
+        resultService.create(request.getRequestType(),
+                request.getRequestDetail(),
+                value,
+                request.getTrackedLists().stream().mapToInt(TrackedList::getTotalJobCount).sum(),
+                request.getTrackedLists().stream().mapToInt(TrackedList::getErrorJobCount).sum(),
+                request.getTrackedLists().stream().mapToInt(TrackedList::getCompletedJobCount).sum());
         requestRepository.delete(request);
-        // TODO : Move to Completed Request
+        // TODO : Send Email
     }
 
-    /**
-     * To Resolve any Password Capture Links
-     *
-     * @param request
-     * @return {@RequestDetail}
-     */
-    private RequestDetail getRequestDetail(Request request) {
-        switch (request.getRequestType()) {
-            case WPA:
-                return wpaRequestDetailService.get(request.getRequestDetail().getId());
-            case MATCH:
-                return matchRequestDetailService.get(request.getRequestDetail().getId());
-            default:
-                throw new RuntimeException("Request Type was null");
-        }
+    public void retireRequest(Long id) {
+        retireRequest(id, null);
     }
 }

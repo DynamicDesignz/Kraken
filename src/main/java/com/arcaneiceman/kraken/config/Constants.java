@@ -14,7 +14,6 @@ public class Constants {
      * Aircrack Responses
      */
     public static final String VALID_FILE = "Please specify a dictionary";
-    public static final String QUIT_SEQUENCE = "Quitting aircrack-ng...";
-    public static final String INVALID_SSID = "Invalid SSID";
+    public static final String INVALID_BSSID = "Invalid BSSID";
     public static final String INVALID_FILE = "Unsupported file format";
 }

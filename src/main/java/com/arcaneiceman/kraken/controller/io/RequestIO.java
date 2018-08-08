@@ -73,8 +73,19 @@ public class RequestIO {
         @AllArgsConstructor
         public static class Response {
 
+            @NotNull
             RequestType requestType;
 
+            @NotNull
+            @JsonTypeInfo(
+                    use = JsonTypeInfo.Id.NAME,
+                    include = JsonTypeInfo.As.EXTERNAL_PROPERTY,
+                    property = "requestType"
+            )
+            @JsonSubTypes({
+                    @JsonSubTypes.Type(value = WPARequestDetail.class, name = "WPA"),
+                    @JsonSubTypes.Type(value = MatchRequestDetail.class, name = "MATCH")
+            })
             RequestDetail requestDetail;
 
             Long requestId;

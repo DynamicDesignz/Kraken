@@ -7,6 +7,8 @@ import com.arcaneiceman.kraken.service.RequestService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
@@ -51,6 +53,12 @@ public class RequestController {
         return ResponseEntity.ok(requestService.get(id));
     }
 
+    @GetMapping(value = "/requests")
+    public Page<Request> get(Pageable pageable) {
+        log.debug("REST Request to get Requests");
+        return requestService.get(pageable);
+    }
+
     @PostMapping(value = "/requests/get-job")
     public ResponseEntity<RequestIO.GetJob.Response> getJob(HttpServletRequest httpServletRequest) {
         log.debug("REST Request to get Job");
@@ -68,7 +76,7 @@ public class RequestController {
     @DeleteMapping(value = "/requests/{id}")
     public ResponseEntity deleteActiveRequest(@PathVariable Long id) {
         log.debug("REST Request to delete Request : {}", id);
-        requestService.retireActiveRequest(id);
+        requestService.retireRequest(id);
         return ResponseEntity.ok().build();
     }
 

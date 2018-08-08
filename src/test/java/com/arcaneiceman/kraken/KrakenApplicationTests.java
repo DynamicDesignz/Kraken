@@ -11,6 +11,7 @@ import com.arcaneiceman.kraken.domain.enumerations.TrackingStatus;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerStatus;
 import com.arcaneiceman.kraken.domain.enumerations.WorkerType;
 import com.arcaneiceman.kraken.domain.request.detail.MatchRequestDetail;
+import com.arcaneiceman.kraken.domain.request.detail.WPARequestDetail;
 import com.arcaneiceman.kraken.repository.*;
 import com.arcaneiceman.kraken.security.AuthoritiesConstants;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -42,6 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class KrakenApplicationTests {
 
+    private ObjectMapper mapper = new ObjectMapper();
     @Autowired
     private MockMvc mockMvc;
     @Autowired
@@ -56,8 +58,6 @@ public class KrakenApplicationTests {
     private WorkerRepository workerRepository;
     @Autowired
     private JobRepository jobRepository;
-
-    private ObjectMapper mapper = new ObjectMapper();
 
     @Before
     public void prepare() {
@@ -527,7 +527,7 @@ public class KrakenApplicationTests {
         // Create Request Successfully
         RequestIO.Create.Request bb = new RequestIO.Create.Request(
                 RequestType.WPA,
-                new MatchRequestDetail("hellohello"),
+                new WPARequestDetail("teddy", null, null),
                 new ArrayList<String>() {{
                     add("test.txt");
                 }},
@@ -733,11 +733,30 @@ public class KrakenApplicationTests {
     }
 
     @Test
-    public void wrongBadWPACapFile() {
+    public void wrongBadWPACapFile() throws Exception {
+        // Login Successfully
+        AccountIO.Authenticate.Request a =
+                new AccountIO.Authenticate.Request("test@test.com", "helloworld");
+        String authToken = login(a, status().isOk());
 
+        // Create Request Successfully
+        RequestIO.Create.Request bb = new RequestIO.Create.Request(
+                RequestType.WPA,
+                new WPARequestDetail("wali", null, null),
+                new ArrayList<String>() {{
+                    add("test.txt");
+                }},
+                new ArrayList<RequestIO.Create.Request.CrunchParams>() {{
+                    add(new RequestIO.Create.Request.CrunchParams(4, 4, "abcdefghijklmnopqrstuvwxyz0123456789", "aaaa"));
+                }});
+        createWPARequest(bb, authToken, status().is4xxClientError());
     }
 
-    private AccountIO.Register.Response registerUser(AccountIO.Register.Request req, ResultMatcher resultMatcher) throws Exception {
+    /*
+        Call Definitions
+     */
+
+    public AccountIO.Register.Response registerUser(AccountIO.Register.Request req, ResultMatcher resultMatcher) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/account/register")
                 .with(request -> {
                     request.addHeader("Content-Type", "application/json");
@@ -752,7 +771,7 @@ public class KrakenApplicationTests {
         }
     }
 
-    private String login(AccountIO.Authenticate.Request authRequest, ResultMatcher resultMatcher) throws Exception {
+    public String login(AccountIO.Authenticate.Request authRequest, ResultMatcher resultMatcher) throws Exception {
         MvcResult tokenResult = mockMvc.perform(post("/api/account/authenticate")
                 .with(request -> {
                     request.addHeader("Content-Type", "application/json");
@@ -763,7 +782,7 @@ public class KrakenApplicationTests {
         return mapper.readValue(tokenResult.getResponse().getContentAsString(), AccountIO.Authenticate.Response.class).getToken();
     }
 
-    private Worker createWorker(WorkerIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
+    public Worker createWorker(WorkerIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/worker")
                 .with(request -> {
                     request.addHeader("Authorization", "Bearer " + authToken);
@@ -779,7 +798,7 @@ public class KrakenApplicationTests {
         }
     }
 
-    private String workerLogin(String workerName, WorkerType workerType, String authToken, ResultMatcher resultMatcher) throws Exception {
+    public String workerLogin(String workerName, WorkerType workerType, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult tokenResult = mockMvc.perform(post("/api/worker/augment-token")
                 .with(request -> {
                     request.addHeader("Authorization", "Bearer " + authToken);
@@ -794,7 +813,7 @@ public class KrakenApplicationTests {
         }
     }
 
-    private Worker getWorker(String workerName, WorkerType workerType, String authToken, ResultMatcher resultMatcher) throws Exception {
+    public Worker getWorker(String workerName, WorkerType workerType, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult tokenResult = mockMvc.perform(get("/api/worker")
                 .with(request -> {
                     request.addHeader("Authorization", "Bearer " + authToken);
@@ -809,7 +828,7 @@ public class KrakenApplicationTests {
         }
     }
 
-    private Worker deleteWorker(String workerName, WorkerType workerType, String authToken, ResultMatcher resultMatcher) throws Exception {
+    public Worker deleteWorker(String workerName, WorkerType workerType, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult tokenResult = mockMvc.perform(delete("/api/worker")
                 .with(request -> {
                     request.addHeader("Authorization", "Bearer " + authToken);
@@ -824,7 +843,7 @@ public class KrakenApplicationTests {
         }
     }
 
-    private void workerHeartbeat(String workerAuthToken, ResultMatcher resultMatcher) throws Exception {
+    public void workerHeartbeat(String workerAuthToken, ResultMatcher resultMatcher) throws Exception {
         mockMvc.perform(post("/api/worker/heartbeat")
                 .with(request -> {
                     request.addHeader("Content-Type", "application/json");
@@ -834,7 +853,7 @@ public class KrakenApplicationTests {
                 .andExpect(resultMatcher);
     }
 
-    private Request createMatchRequest(RequestIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
+    public Request createMatchRequest(RequestIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/requests")
                 .with(request -> {
                     request.addHeader("Authorization", "Bearer " + authToken);
@@ -850,7 +869,7 @@ public class KrakenApplicationTests {
         }
     }
 
-    private Request createWPARequest(RequestIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
+    public Request createWPARequest(RequestIO.Create.Request req, String authToken, ResultMatcher resultMatcher) throws Exception {
         MockMultipartFile mockMultipartFile =
                 new MockMultipartFile("capture-file", new ClassPathResource("wpa.full.cap").getInputStream());
         MvcResult result = mockMvc.perform(multipart("/api/requests")
@@ -869,7 +888,7 @@ public class KrakenApplicationTests {
         }
     }
 
-    private Request getRequest(Long id, String authToken, ResultMatcher resultMatcher) throws Exception {
+    public Request getRequest(Long id, String authToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult result = mockMvc.perform(get("/api/requests/" + id.toString())
                 .with(request -> {
                     request.addHeader("Authorization", "Bearer " + authToken);
@@ -886,7 +905,7 @@ public class KrakenApplicationTests {
         public RequestDetail requestDetail;
     }
 
-    private RequestIO.GetJob.Response getJob(String workerAuthToken, ResultMatcher resultMatcher) throws Exception {
+    public RequestIO.GetJob.Response getJob(String workerAuthToken, ResultMatcher resultMatcher) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/requests/get-job")
                 .with(request -> {
                     request.addHeader("Authorization", "Bearer " + workerAuthToken);
@@ -900,9 +919,9 @@ public class KrakenApplicationTests {
         }
     }
 
-    private void reportJob(RequestIO.ReportJob.Request req,
-                           String workerAuthToken,
-                           ResultMatcher resultMatcher) throws Exception {
+    public void reportJob(RequestIO.ReportJob.Request req,
+                          String workerAuthToken,
+                          ResultMatcher resultMatcher) throws Exception {
         mockMvc.perform(post("/api/requests/report-job")
                 .with(request -> {
                     request.addHeader("Authorization", "Bearer " + workerAuthToken);
@@ -911,5 +930,4 @@ public class KrakenApplicationTests {
                 }).content(mapper.writeValueAsString(req)))
                 .andExpect(resultMatcher);
     }
-
 }

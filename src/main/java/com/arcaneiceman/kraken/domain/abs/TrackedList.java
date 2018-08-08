@@ -21,7 +21,7 @@ public abstract class TrackedList extends MtoOPermissionEntity<Request> {
     private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column
